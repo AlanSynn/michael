@@ -130,54 +130,174 @@ Content:
 };
 
 Office.onReady((info) => {
-  if (info.host === Office.HostType.Outlook) {
-    document.getElementById("sideload-msg").style.display = "none";
-    document.getElementById("app-body").style.display = "flex";
+    if (info.host === Office.HostType.Outlook) {
+        document.getElementById("sideload-msg").style.display = "none";
+        document.getElementById("app-body").style.display = "flex";
 
-    // Initialize the application
-    initializeApp();
+        // Initialize the application
+        initializeApp();
 
-    // Add event listeners for the application buttons
-    document.getElementById("summarize").addEventListener("click", summarizeEmail);
-    document.getElementById("translate").addEventListener("click", translateEmail);
-    document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
-    document.getElementById("settings-toggle").addEventListener("click", toggleSettingsDropdown);
-    document.getElementById("dropdown-close-settings").addEventListener("click", toggleSettingsDropdown);
-    document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
-    document.getElementById("dropdown-reset-templates").addEventListener("click", resetTemplates);
-    document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
-    document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
-      if (event.key === "Enter") {
-        saveDropdownSettings();
-      }
-    });
+        // Check if autorun is enabled and get the selected option
+        let autorunEnabled = false;
+        let selectedOption = null;
+        try {
+            const savedSettings = localStorage.getItem('michael_settings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+                autorunEnabled = settings.autorun === 'true';
+                selectedOption = settings.autorunOption;
+            }
+        } catch (error) {
+            console.error('Error getting autorun settings:', error);
+        }
 
-    // Settings selection change listeners
-    document.querySelectorAll(".settings-dropdown-container select").forEach(select => {
-      select.addEventListener("change", saveDropdownSettings);
-    });
+        // If autorun is enabled and an option is selected, execute it
+        if (autorunEnabled && selectedOption) {
+            switch (selectedOption) {
+                case 'summarize':
+                    summarizeEmail();
+                    break;
+                case 'translate':
+                    translateEmail();
+                    break;
+                case 'translateAndSummarize':
+                    translateAndSummarizeEmail();
+                    break;
+                case 'reply':
+                    generateReply();
+                    break;
+            }
+        }
 
-    // Expand button listener
-    document.getElementById("expand-content").addEventListener("click", expandContent);
+        // Add event listeners for the application buttons
+        document.getElementById("summarize").addEventListener("click", summarizeEmail);
+        document.getElementById("translate").addEventListener("click", translateEmail);
+        document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
+        document.getElementById("settings-toggle").addEventListener("click", toggleSettingsDropdown);
+        document.getElementById("dropdown-close-settings").addEventListener("click", toggleSettingsDropdown);
+        document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
+        document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
+        document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                saveDropdownSettings();
+            }
+        });
 
-    // Copy buttons listeners
-    document.getElementById("copy-result").addEventListener("click", copyResult);
-    document.getElementById("generate-reply").addEventListener("click", generateReply);
+        // Add dev mode toggle listener
+        document.getElementById("dropdown-dev-mode").addEventListener("change", function() {
+            const devServerGroup = document.getElementById("dev-server-group");
+            devServerGroup.style.display = this.value === "true" ? "block" : "none";
+        });
 
-    // Load saved settings if any
-    loadDropdownSettings();
+        // Settings selection change listeners
+        document.querySelectorAll(".settings-dropdown-container select").forEach(select => {
+            select.addEventListener("change", saveDropdownSettings);
+        });
 
-    // Apply current theme
-    applyCurrentTheme();
+        // Expand button listener
+        document.getElementById("expand-content").addEventListener("click", expandContent);
 
-    // Register for theme change events
-    if (Office.context.mailbox.addHandlerAsync) {
-      Office.context.mailbox.addHandlerAsync(
-        Office.EventType.SettingsChanged,
-        onSettingsChanged
-      );
+        // Copy buttons listeners
+        document.getElementById("copy-result").addEventListener("click", copyResult);
+        document.getElementById("generate-reply").addEventListener("click", generateReply);
+
+        // Load saved settings if any
+        loadDropdownSettings();
+
+        // Apply current theme
+        applyCurrentTheme();
+
+        // Register for theme change events
+        if (Office.context.mailbox.addHandlerAsync) {
+            Office.context.mailbox.addHandlerAsync(
+                Office.EventType.SettingsChanged,
+                onSettingsChanged
+            );
+        }
+
+        // Add event handler for email selection
+        Office.context.mailbox.addHandlerAsync(
+            Office.EventType.ItemChanged,
+            function (args) {
+                // Check if autorun is enabled and get the selected option
+                let autorunEnabled = false;
+                let selectedOption = null;
+                try {
+                    const savedSettings = localStorage.getItem('michael_settings');
+                    if (savedSettings) {
+                        const settings = JSON.parse(savedSettings);
+                        autorunEnabled = settings.autorun === 'true';
+                        selectedOption = settings.autorunOption;
+                    }
+                } catch (error) {
+                    console.error('Error getting autorun settings:', error);
+                }
+
+                // If autorun is enabled and an option is selected, execute it
+                if (autorunEnabled && selectedOption) {
+                    switch (selectedOption) {
+                        case 'summarize':
+                            summarizeEmail();
+                            break;
+                        case 'translate':
+                            translateEmail();
+                            break;
+                        case 'translateAndSummarize':
+                            translateAndSummarizeEmail();
+                            break;
+                        case 'reply':
+                            generateReply();
+                            break;
+                    }
+                }
+            },
+            function (result) {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    result.value.addHandlerAsync(
+                        Office.EventType.ItemChanged,
+                        function (args) {
+                            // Check if autorun is enabled and get the selected option
+                            let autorunEnabled = false;
+                            let selectedOption = null;
+                            try {
+                                const savedSettings = localStorage.getItem('michael_settings');
+                                if (savedSettings) {
+                                    const settings = JSON.parse(savedSettings);
+                                    autorunEnabled = settings.autorun === 'true';
+                                    selectedOption = settings.autorunOption;
+                                }
+                            } catch (error) {
+                                console.error('Error getting autorun settings:', error);
+                            }
+
+                            // If autorun is enabled and an option is selected, execute it
+                            if (autorunEnabled && selectedOption) {
+                                switch (selectedOption) {
+                                    case 'summarize':
+                                        summarizeEmail();
+                                        break;
+                                    case 'translate':
+                                        translateEmail();
+                                        break;
+                                    case 'translateAndSummarize':
+                                        translateAndSummarizeEmail();
+                                        break;
+                                    case 'reply':
+                                        generateReply();
+                                        break;
+                                }
+                            }
+                        },
+                        function (result) {
+                            if (result.status === Office.AsyncResultStatus.Succeeded) {
+                                result.value.register();
+                            }
+                        }
+                    );
+                }
+            }
+        );
     }
-  }
 });
 
 /**
@@ -334,6 +454,10 @@ function saveDropdownSettings() {
   const tldrMode = document.getElementById('dropdown-tldr-mode').value;
   const showReply = document.getElementById('dropdown-show-reply').value;
   const replyModel = document.getElementById('dropdown-reply-model').value;
+  const autorun = document.getElementById('dropdown-autorun').value;
+  const autorunOption = document.getElementById('dropdown-autorun-option').value;
+  const devMode = document.getElementById('dropdown-dev-mode').value;
+  const devServer = document.getElementById('dropdown-dev-server').value;
   const summarizeTemplate = document.getElementById('dropdown-summarize-template').value;
   const translateTemplate = document.getElementById('dropdown-translate-template').value;
   const translateSummarizeTemplate = document.getElementById('dropdown-translate-summarize-template').value;
@@ -347,6 +471,10 @@ function saveDropdownSettings() {
   settings.tldrMode = tldrMode;
   settings.showReply = showReply;
   settings.replyModel = replyModel;
+  settings.autorun = autorun;
+  settings.autorunOption = autorunOption;
+  settings.devMode = devMode;
+  settings.devServer = devServer;
 
   // Make sure templates object exists
   if (!settings.templates) {
@@ -369,6 +497,9 @@ function saveDropdownSettings() {
 
   // Update UI for reply button
   updateReplyButtonVisibility(showReply === 'true');
+
+  // Update dev badges visibility
+  updateDevBadges(devMode === 'true');
 
   showNotification('All settings saved successfully');
 
@@ -408,6 +539,19 @@ function loadDropdownSettings() {
       if (settings.tldrMode) document.getElementById('dropdown-tldr-mode').value = settings.tldrMode;
       if (settings.showReply) document.getElementById('dropdown-show-reply').value = settings.showReply;
       if (settings.replyModel) document.getElementById('dropdown-reply-model').value = settings.replyModel;
+      if (settings.autorun) document.getElementById('dropdown-autorun').value = settings.autorun;
+      if (settings.autorunOption) document.getElementById('dropdown-autorun-option').value = settings.autorunOption;
+      if (settings.devMode) document.getElementById('dropdown-dev-mode').value = settings.devMode;
+      if (settings.devServer) document.getElementById('dropdown-dev-server').value = settings.devServer;
+
+      // Show/hide dev server input based on dev mode
+      const devServerGroup = document.getElementById("dev-server-group");
+      if (devServerGroup) {
+        devServerGroup.style.display = settings.devMode === 'true' ? 'block' : 'none';
+      }
+
+      // Update dev badges visibility
+      updateDevBadges(settings.devMode === 'true');
 
       // Apply font size if saved
       if (settings.fontSize) {
@@ -1509,44 +1653,71 @@ function getFontSizeValue(size) {
  * Reset all settings to defaults
  */
 function resetAllSettings() {
-  // Reset model selection
-  document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
+    // Reset model selection
+    document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
 
-  // Reset language selection
-  document.getElementById('dropdown-language').value = 'ko';
+    // Reset language selection
+    document.getElementById('dropdown-language').value = 'ko';
 
-  // Reset theme selection
-  document.getElementById('dropdown-theme').value = 'system';
+    // Reset theme selection
+    document.getElementById('dropdown-theme').value = 'system';
 
-  // Reset font size selection
-  document.getElementById('dropdown-font-size').value = 'medium';
+    // Reset font size selection
+    document.getElementById('dropdown-font-size').value = 'medium';
 
-  // Reset TLDR mode selection
-  document.getElementById('dropdown-tldr-mode').value = 'true';
+    // Reset TLDR mode selection
+    document.getElementById('dropdown-tldr-mode').value = 'true';
 
-  // Reset show reply selection
-  document.getElementById('dropdown-show-reply').value = 'true';
+    // Reset show reply selection
+    document.getElementById('dropdown-show-reply').value = 'true';
 
-  // Reset reply model selection
-  document.getElementById('dropdown-reply-model').value = 'gemini-2.0-flash-lite';
+    // Reset reply model selection
+    document.getElementById('dropdown-reply-model').value = 'gemini-2.0-flash-lite';
 
-  // Reset templates
-  resetTemplates();
+    // Reset autorun settings
+    document.getElementById('dropdown-autorun').value = 'false';
+    document.getElementById('dropdown-autorun-option').value = 'summarize';
 
-  // Clear API key
-  document.getElementById('dropdown-api-key').value = '';
+    // Reset dev mode settings
+    document.getElementById('dropdown-dev-mode').value = 'false';
+    document.getElementById('dropdown-dev-server').value = '';
+    document.getElementById('dev-server-group').style.display = 'none';
 
-  // Clear saved settings from localStorage
-  localStorage.removeItem('michael_settings');
+    // Reset templates
+    resetTemplates();
 
-  // Apply default theme
-  applyCurrentTheme();
+    // Clear API key
+    document.getElementById('dropdown-api-key').value = '';
 
-  // Apply default font size
-  applyFontSize('medium');
+    // Clear saved settings from localStorage
+    localStorage.removeItem('michael_settings');
 
-  // Update reply button visibility
-  updateReplyButtonVisibility(true);
+    // Apply default theme
+    applyCurrentTheme();
 
-  showNotification('All settings reset to defaults', 'success');
+    // Apply default font size
+    applyFontSize('medium');
+
+    // Update reply button visibility
+    updateReplyButtonVisibility(true);
+
+    // Update dev badges visibility
+    updateDevBadges(false);
+
+    showNotification('All settings reset to defaults', 'success');
+}
+
+/**
+ * Update dev badges visibility
+ */
+function updateDevBadges(show) {
+    const devBadge = document.getElementById('dev-badge');
+    const footerDevBadge = document.getElementById('footer-dev-badge');
+
+    if (devBadge) {
+        devBadge.style.display = show ? 'block' : 'none';
+    }
+    if (footerDevBadge) {
+        footerDevBadge.style.display = show ? 'block' : 'none';
+    }
 }
