@@ -9,17 +9,17 @@
   <!-- 기본 설정 -->
   <Id>9549e1d3-1ddc-4383-8b3a-d71952f8453a</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>ReadMe Darling</ProviderName>
+  <ProviderName>Read it for me, [Local]</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="ReadMe Darling"/>
+  <DisplayName DefaultValue="Read it for me, [Local]"/>
   <Description DefaultValue="Summarize and translate emails using Gemini AI."/>
-  <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-128.png"/>
-  <SupportUrl DefaultValue="https://github.com/AlanSynn/michael"/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-128.png"/>
+  <SupportUrl DefaultValue="https://github.com/AlanSynn/readmedarling"/>
 
   <!-- 허용된 도메인 -->
   <AppDomains>
-    <AppDomain>https://alansynn.github.io</AppDomain>
+    <AppDomain>https://localhost:3000</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
 
@@ -38,7 +38,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+        <SourceLocation DefaultValue="https://localhost:3000/taskpane.html"/>
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -106,16 +106,16 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="ReadMe Darling"/>
+        <bt:String id="GroupLabel" DefaultValue="Read it for me, [Local]"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
         <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/>
       </bt:ShortStrings>
@@ -179,16 +179,16 @@
       </Hosts>
       <Resources>
         <bt:Images>
-          <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
-          <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
-          <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
+          <bt:Image id="Icon.16x16" DefaultValue="https://localhost:3000/assets/icon-16.png"/>
+          <bt:Image id="Icon.32x32" DefaultValue="https://localhost:3000/assets/icon-32.png"/>
+          <bt:Image id="Icon.80x80" DefaultValue="https://localhost:3000/assets/icon-80.png"/>
         </bt:Images>
         <bt:Urls>
-          <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
-          <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+          <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/commands.html"/>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
-          <bt:String id="GroupLabel" DefaultValue="ReadMe Darling"/>
+          <bt:String id="GroupLabel" DefaultValue="Read it for me, [Local]"/>
           <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
           <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/>
         </bt:ShortStrings>

@@ -7,6 +7,9 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://alansynn.github.io/michael/"; // Updated to your GitHub Pages URL
 
+const addinName = "Read it for me, Michael";
+const addinDevName = "Read it for me, [Local]";
+
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
   return { cacert: httpsOptions.ca, key: httpsOptions.key, cert: httpsOptions.cert };
@@ -77,12 +80,16 @@ module.exports = async (env, options) => {
           },
           {
             from: "manifest*.xml",
-            to: "[name]." + buildType + ".[ext]",
+            to: "[name]." + buildType + "[ext]",
             transform(content) {
               if (dev) {
                 return content;
               } else {
-                return content.toString().replace(new RegExp(urlDev, "g"), urlProd);
+                content = content
+                  .toString()
+                  .replace(new RegExp(addinDevName, "g"), addinName)
+                  .replace(new RegExp(urlDev, "g"), urlProd);
+                return content;
               }
             },
           },
