@@ -383,7 +383,8 @@ body {
 
 /* Footer styles */
 .app-footer {
-    padding: 12px;
+    margin-top: auto;
+    padding: 10px;
     text-align: center;
     font-size: 12px;
     color: var(--text-secondary);
@@ -396,8 +397,15 @@ body {
     z-index: 5;
 }
 
-.heart {
-    color: #e25555;
+.app-footer p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.app-footer .heart {
     display: inline-block;
     animation: heartbeat 1.5s ease infinite;
 }
@@ -405,6 +413,11 @@ body {
 @keyframes heartbeat {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.15); }
+}
+
+.app-footer .dev-badge {
+    display: inline-block;
+    margin-left: 4px;
 }
 
 /* Notification styles */
@@ -610,4 +623,18 @@ html[data-font-size="large"] {
     .action-button i {
         font-size: 18px;
     }
+}
+
+.dev-badge {
+    background-color: #0078d4;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 8px;
+}
+
+#dev-server-group {
+    margin-top: 8px;
 }
