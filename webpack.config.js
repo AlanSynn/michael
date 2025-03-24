@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const urlDev = "https://localhost:3000/";
-const urlProd = "https://www.contoso.com/"; // CHANGE THIS TO YOUR PRODUCTION DEPLOYMENT LOCATION
+const urlProd = "https://alansynn.github.io/michael/"; // Updated to your GitHub Pages URL
 
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
@@ -20,8 +20,7 @@ module.exports = async (env, options) => {
     entry: {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       taskpane: "./src/taskpane/taskpane.js",
-      commands: "./src/commands/commands.js",
-      options: "./src/taskpane/options.js"
+      commands: "./src/commands/commands.js"
     },
     output: {
       devtoolModuleFilenameTemplate: "webpack:///[resource-path]?[loaders]",
@@ -66,11 +65,6 @@ module.exports = async (env, options) => {
         filename: "commands.html",
         template: "./src/commands/commands.html",
         chunks: ["polyfill", "commands"],
-      }),
-      new HtmlWebpackPlugin({
-        filename: "options.html",
-        template: "./src/taskpane/options.html",
-        chunks: ["polyfill", "options"],
       }),
       new CopyWebpackPlugin({
         patterns: [
