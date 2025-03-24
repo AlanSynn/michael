@@ -1,0 +1,1395 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT license.
+ * See LICENSE in the project root for license information.
+ */
+
+/* CSS Variables for themes */
+:root {
+    /* Light theme (default) */
+    --background-primary: #ffffff;
+    --background-secondary: #f3f2f1;
+    --text-primary: #323130;
+    --text-secondary: #605e5c;
+    --accent-color: #0078d4;
+    --border-color: #edebe9;
+    --hover-background: #f3f2f1;
+    --button-background: #0078d4;
+    --button-text: #ffffff;
+    --button-hover: #106ebe;
+    --link-color: #0078d4;
+    --link-hover: #004578;
+    --success-color: #107c10;
+    --error-color: #a4262c;
+
+    /* Form element colors */
+    --input-background: #ffffff;
+    --input-border: #cccccc;
+    --input-text: #333333;
+
+    /* Notification colors */
+    --success-background: #dff6dd;
+    --success-text: #107c10;
+    --success-border: #107c10;
+    --error-background: #fde7e9;
+    --error-text: #a80000;
+    --error-border: #a80000;
+
+    /* Result box colors */
+    --result-background: #f9f9f9;
+    --result-border: #cccccc;
+
+    /* Light theme logo filter */
+    --logo-filter: none;
+
+    --code-background: #f5f5f5;
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+    --background-primary: #252423;
+    --background-secondary: #323130;
+    --text-primary: #f3f2f1;
+    --text-secondary: #c8c6c4;
+    --accent-color: #2b88d8;
+    --border-color: #484644;
+    --hover-background: #3b3a39;
+    --button-background: #2b88d8;
+    --button-text: #ffffff;
+    --button-hover: #4894d2;
+    --link-color: #2b88d8;
+    --link-hover: #a9d3ff;
+    --success-color: #92c353;
+    --error-color: #f1707b;
+
+    /* Form element colors */
+    --input-background: #3c3c3c;
+    --input-border: #555555;
+    --input-text: #f3f3f3;
+
+    /* Notification colors */
+    --success-background: #143918;
+    --success-text: #6ccf59;
+    --success-border: #10a710;
+    --error-background: #3e0505;
+    --error-text: #ff9494;
+    --error-border: #db0000;
+
+    /* Result box colors */
+    --result-background: #2d2d2d;
+    --result-border: #555555;
+
+    /* Dark theme logo filter */
+    --logo-filter: brightness(0.9) contrast(1.1);
+
+    --code-background: #3a3a3a;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+
+    /* Default dark theme */
+    --background-primary: #252423;
+    --background-secondary: #323130;
+    --text-primary: #f3f2f1;
+    --text-secondary: #c8c6c4;
+    --accent-color: #2b88d8;
+    --border-color: #484644;
+    --hover-background: #3b3a39;
+    --button-background: #2b88d8;
+    --button-text: #ffffff;
+    --button-hover: #4894d2;
+    --link-color: #2b88d8;
+    --link-hover: #a9d3ff;
+    --success-color: #92c353;
+    --error-color: #f1707b;
+
+    /* Form element colors */
+    --input-background: #3c3c3c;
+    --input-border: #555555;
+    --input-text: #f3f3f3;
+
+    /* Notification colors */
+    --success-background: #143918;
+    --success-text: #6ccf59;
+    --success-border: #10a710;
+    --error-background: #3e0505;
+    --error-text: #ff9494;
+    --error-border: #db0000;
+
+    /* Result box colors */
+    --result-background: #2d2d2d;
+    --result-border: #555555;
+
+    /* Default dark theme logo filter */
+    --logo-filter: brightness(0.9) contrast(1.1);
+}
+
+/* Light theme override */
+body[data-theme="light"] {
+    --background-primary: #ffffff;
+    --background-secondary: #f3f2f1;
+    --text-primary: #323130;
+    --text-secondary: #605e5c;
+    --accent-color: #0078d4;
+    --border-color: #edebe9;
+    --hover-background: #f3f2f1;
+    --button-background: #0078d4;
+    --button-text: #ffffff;
+    --button-hover: #106ebe;
+    --link-color: #0078d4;
+    --link-hover: #004578;
+    --success-color: #107c10;
+    --error-color: #a4262c;
+
+    /* Form element colors */
+    --input-background: #ffffff;
+    --input-border: #cccccc;
+    --input-text: #333333;
+
+    /* Notification colors */
+    --success-background: #dff6dd;
+    --success-text: #107c10;
+    --success-border: #107c10;
+    --error-background: #fde7e9;
+    --error-text: #a80000;
+    --error-border: #a80000;
+
+    /* Result box colors */
+    --result-background: #f9f9f9;
+    --result-border: #cccccc;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+}
+
+/* Modern header styles */
+.ms-welcome__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: linear-gradient(to right, var(--background-secondary), var(--background-primary));
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+    height: 48px;
+    position: relative;
+    z-index: 10;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-brand img {
+    filter: var(--logo-filter);
+    transition: transform 0.2s ease;
+}
+
+.header-brand:hover img {
+    transform: scale(1.05);
+}
+
+.brand-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.action-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.action-button:hover {
+    background-color: var(--hover-background);
+}
+
+.action-button:active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.action-button i {
+    font-size: 16px;
+}
+
+.action-button span {
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+    .action-button span {
+        display: none;
+    }
+
+    .action-button {
+        padding: 6px;
+    }
+
+    .action-button i {
+        font-size: 18px;
+    }
+}
+
+.ms-welcome__main {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 48px);
+    position: relative;
+    padding: 0;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+}
+
+.ms-welcome__main > h2 {
+    width: 100%;
+    text-align: center;
+    color: var(--text-primary);
+}
+
+.ms-welcome__features {
+    margin-top: 10px;
+}
+
+.ms-welcome__features.ms-List .ms-ListItem {
+    padding-bottom: 20px;
+    display: -webkit-flex;
+    display: flex;
+}
+
+.ms-welcome__features.ms-List .ms-ListItem > .ms-Icon {
+    margin-right: 10px;
+}
+
+.ms-welcome__action.ms-Button--hero {
+    margin-top: 30px;
+}
+
+.ms-Button.ms-Button--hero .ms-Button-label {
+    color: var(--accent-color);
+}
+
+.ms-Button.ms-Button--hero:hover .ms-Button-label,
+.ms-Button.ms-Button--hero:focus .ms-Button-label{
+    color: var(--button-hover-background);
+    cursor: pointer;
+}
+
+b {
+    font-weight: bold;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+}
+
+.ms-TextField-field {
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    border-radius: 2px;
+}
+
+.ms-Dropdown {
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    background-color: var(--input-background);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    border-radius: 2px;
+}
+
+#action-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#action-section button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    background-color: var(--button-background);
+    color: var(--button-text);
+    border: none;
+    transition: background-color 0.2s;
+}
+
+#action-section button:hover {
+    background-color: var(--button-hover-background);
+}
+
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: var(--accent-color);
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+[data-theme="dark"] .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--accent-color);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#loading {
+    text-align: center;
+    margin: 20px 0;
+    color: var(--text-primary);
+}
+
+#result-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    height: 100%;
+    margin-bottom: 50px;
+}
+
+.result-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--result-background);
+    border: 1px solid var(--result-border);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    flex: 1;
+}
+
+.markdown-body {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 16px;
+    color: var(--text-primary);
+    line-height: var(--result-line-height);
+    font-size: var(--result-font-size);
+}
+
+.result-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    border-top: 1px solid var(--result-border);
+    padding-top: 16px;
+}
+
+.action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+#copy-result, #save-options, #reset-templates {
+    background-color: var(--button-background);
+    color: var(--button-text);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#save-options {
+    min-width: 120px;
+}
+
+#copy-result:hover, #save-options:hover, #reset-templates:hover {
+    background-color: var(--button-hover-background);
+}
+
+#reset-templates {
+    background-color: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+#reset-templates:hover {
+    background-color: var(--background-secondary);
+}
+
+#copy-status {
+    margin-left: 10px;
+    color: var(--success-text);
+}
+
+/* Notification styles */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    border-radius: 4px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    animation: fadeInUp 0.3s, fadeOut 0.3s 2.7s;
+    max-width: 80%;
+}
+
+.notification.info {
+    background-color: var(--accent-color, #2b88d8);
+}
+
+.notification.success {
+    background-color: #107c10;
+}
+
+.notification.error {
+    background-color: #d13438;
+}
+
+.notification.warning {
+    background-color: #ff8c00;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Options page specific styles */
+.back-link {
+    margin-bottom: 15px;
+}
+
+.back-link a {
+    color: var(--link-color);
+    text-decoration: none;
+    font-size: 14px;
+    display: inline-block;
+}
+
+.back-link a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+.options-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.options-section:last-of-type {
+    border-bottom: none;
+}
+
+.options-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+textarea.ms-TextField-field {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.description {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    margin-bottom: 10px;
+}
+
+.description a {
+    color: var(--link-color);
+    text-decoration: none;
+}
+
+.description a:hover {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+/* Settings button in main taskpane */
+.settings-link {
+    color: var(--text-primary);
+    font-size: 18px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.settings-link:hover {
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+}
+
+/* Settings dropdown styles */
+.settings-dropdown {
+    position: absolute;
+    top: 52px;
+    right: 12px;
+    width: calc(100% - 24px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    padding: 16px;
+    border-radius: 6px;
+    animation: fadeInDropdown 0.2s ease-out;
+}
+
+.settings-dropdown-content {
+    padding: 15px;
+}
+
+.settings-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+}
+
+.settings-section h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* Make the main content container have a relative position for the dropdown */
+#app-body {
+    position: relative;
+}
+
+/* Update spinner and notification z-index to appear above dropdown */
+.spinner, .notification {
+    z-index: 200;
+}
+
+/* Settings dropdown */
+.settings-icon {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
+.settings-icon button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: var(--text-primary);
+    padding: 5px;
+}
+
+.settings-icon button:hover {
+    color: var(--accent-color);
+}
+
+.settings-dropdown {
+    position: absolute;
+    top: 65px;
+    right: 15px;
+    width: calc(100% - 30px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+.settings-dropdown h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.settings-section {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-section h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    margin-top: 5px;
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+}
+
+.settings-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+.template-field {
+    min-height: 80px;
+}
+
+/* Form Elements */
+.ms-TextField {
+    margin-bottom: 15px;
+}
+
+.ms-Label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.ms-TextField-field, select.ms-TextField-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+/* Buttons */
+.ms-Button {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: center;
+    border-radius: 2px;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+}
+
+.ms-Button:hover {
+    background-color: var(--hover-background);
+}
+
+.ms-Button--primary {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: white;
+}
+
+.ms-Button--primary:hover {
+    background-color: var(--button-hover);
+    border-color: var(--button-hover);
+}
+
+.action-buttons {
+    display: flex;
+    margin-bottom: 15px;
+    margin-top: 15px;
+}
+
+/* Result section */
+#result-content {
+    white-space: pre-wrap;
+    overflow-y: auto;
+    font-size: var(--result-font-size);
+    line-height: var(--result-line-height);
+}
+
+.result-actions {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+}
+
+.copy-status {
+    margin-left: 10px;
+    color: var(--success-color);
+}
+
+/* Loading spinner */
+.spinner {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border-radius: 50%;
+    border: 4px solid var(--hover-background);
+    border-top-color: var(--accent-color);
+    animation: spinner 0.8s linear infinite;
+    z-index: 110;
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+#loading-message {
+    text-align: center;
+    margin-top: 5px;
+}
+
+/* Notification system */
+.notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--success-color);
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    animation: fadein 0.5s;
+    z-index: 110;
+}
+
+.notification.error {
+    background-color: var(--error-color);
+}
+
+.notification.fadeout {
+    animation: fadeout 0.5s;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeout {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Markdown styling */
+.markdown-body h1 {
+    font-size: var(--heading1-size);
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+    color: var(--accent-color);
+}
+
+.markdown-body h2 {
+    font-size: var(--heading2-size);
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.markdown-body h3 {
+    font-size: var(--heading3-size);
+    margin-top: 0.7em;
+    margin-bottom: 0.7em;
+    font-weight: 700;
+}
+
+.markdown-body p {
+    margin-top: 0.8em;
+    margin-bottom: 0.8em;
+    font-size: var(--result-font-size);
+}
+
+.markdown-body ul, .markdown-body ol {
+    margin-top: 0.8em;
+    margin-bottom: 0.8em;
+    padding-left: 0;  /* Remove indentation as requested */
+    list-style-position: inside;
+}
+
+.markdown-body li {
+    margin-bottom: 0.5em;
+    padding-left: 0;
+}
+
+.markdown-body code {
+    background-color: var(--code-background);
+    padding: 3px 5px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: var(--code-font-size);
+    font-weight: 500;
+}
+
+.markdown-body pre {
+    background-color: var(--code-background);
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+}
+
+.markdown-body pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.markdown-body blockquote {
+    padding: 0 1em;
+    color: var(--text-secondary);
+    border-left: 0.25em solid var(--border-color);
+}
+
+.markdown-body img {
+    max-width: 100%;
+}
+
+.markdown-body a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.markdown-body a:hover {
+    text-decoration: underline;
+}
+
+.markdown-body hr {
+    height: 1px;
+    padding: 0;
+    margin: 24px 0;
+    background-color: var(--border-color);
+    border: 0;
+}
+
+/* Remove indentation from lists as requested */
+.no-indent {
+    padding-left: 0 !important;
+    list-style-position: inside !important;
+}
+
+.no-indent li {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Update result styles to better display markdown */
+#result-content {
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+/* Make action section more prominent now that settings are gone */
+#action-section {
+    margin: 30px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#action-section .ms-Button {
+    margin-bottom: 12px;
+    min-width: 180px;
+    padding: 8px 16px;
+}
+
+#action-section .action-buttons {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Button toolbar - horizontal layout */
+.button-toolbar {
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--background-secondary);
+    padding: 8px 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.toolbar-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 4px;
+    color: var(--text-primary);
+    cursor: pointer;
+    flex: 1;
+    transition: background-color 0.2s;
+}
+
+.toolbar-button:hover {
+    background-color: var(--hover-background);
+}
+
+.toolbar-button i {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.toolbar-button span {
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+/* Landing screen styles */
+#landing-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px 15px;
+    height: calc(100vh - 200px);
+    min-height: 300px;
+}
+
+.landing-content {
+    max-width: 320px;
+}
+
+.landing-logo {
+    width: 200px;
+    height: auto;
+    margin-bottom: 20px;
+    filter: var(--logo-filter);
+    transition: filter 0.3s ease;
+}
+
+.landing-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.landing-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.landing-features {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: var(--background-secondary);
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-2px);
+    background-color: var(--hover-background);
+}
+
+.feature-item i {
+    font-size: 20px;
+    color: var(--accent-color);
+}
+
+.feature-item span {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+/* Footer styles */
+.app-footer {
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: var(--background-primary);
+    border-top: 1px solid var(--border-color);
+    z-index: 5;
+}
+
+.heart {
+    color: #e25555;
+    display: inline-block;
+    animation: heartbeat 1.5s ease infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+
+@keyframes fadeInDropdown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Font size variants */
+html[data-font-size="small"] {
+    --result-font-size: 13px;
+    --result-line-height: 1.5;
+    --heading1-size: 1.7em;
+    --heading2-size: 1.5em;
+    --heading3-size: 1.3em;
+    --code-font-size: 13px;
+    --tldr-heading-size: 1.5em;
+}
+
+html[data-font-size="medium"] {
+    --result-font-size: 16px;
+    --result-line-height: 1.6;
+    --heading1-size: 2em;
+    --heading2-size: 1.7em;
+    --heading3-size: 1.4em;
+    --code-font-size: 15px;
+    --tldr-heading-size: 1.7em;
+}
+
+html[data-font-size="large"] {
+    --result-font-size: 18px;
+    --result-line-height: 1.7;
+    --heading1-size: 2.2em;
+    --heading2-size: 1.9em;
+    --heading3-size: 1.6em;
+    --code-font-size: 17px;
+    --tldr-heading-size: 1.9em;
+}
+
+/* Dark theme - Fix input text visibility */
+[data-theme="dark"] .ms-TextField-field,
+[data-theme="dark"] .ms-Dropdown,
+[data-theme="dark"] select.ms-TextField-field,
+[data-theme="dark"] textarea.ms-TextField-field,
+[data-theme="dark"] input.ms-TextField-field {
+    background-color: var(--input-background);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+/* Ensure dark theme options are visible */
+[data-theme="dark"] select.ms-TextField-field option {
+    background-color: var(--background-primary);
+    color: var(--text-primary);
+}
+
+/* TLDR Section Styling */
+.result-summary {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tldr-heading {
+    font-size: var(--tldr-heading-size);
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+}
+
+#tldr-content {
+    margin-bottom: 15px;
+}
+
+#expand-content {
+    margin-top: 10px;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+}
+
+#expand-content:hover {
+    background-color: var(--hover-background);
+}
+
+#generate-reply {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+#generate-reply:hover {
+    background-color: var(--hover-background);
+}
+
+#full-content-container {
+    padding-top: 10px;
+    margin-bottom: 20px;
+}
+
+/* Fix result display issues */
+.result-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: var(--result-background);
+    border: 1px solid var(--result-border);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    flex: 1;
+}
+
+/* Reply formatting styles */
+.reply-subject {
+    font-size: var(--heading1-size);
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+.reply-body {
+    margin-top: 15px;
+}
+
+.reply-label {
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-right: 5px;
+    font-size: 0.9em;
+}
+
+/* Format for code blocks that might appear in emails */
+.markdown-body pre.email-format {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+    margin: 0;
+}
+
+.markdown-body pre.email-format code {
+    background-color: transparent;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+/* Markdown heading fixes for replies */
+.markdown-body h1.reply-heading {
+    font-size: var(--heading1-size);
+    color: var(--accent-color);
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.markdown-body h1.reply-heading::before {
+    content: "Subject:";
+    font-size: 0.7em;
+    color: var(--text-secondary);
+    margin-right: 8px;
+    font-weight: normal;
+    text-transform: uppercase;
+}
+
+/* Result section formatting */
+.result-box {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: var(--result-bg-color);
+}
+
+/* Reply formatting styles */
+.reply-subject {
+    font-weight: bold;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    background-color: var(--highlight-bg-color);
+    border-left: 3px solid var(--accent-color);
+    border-radius: 4px;
+}
+
+.reply-body {
+    white-space: pre-wrap;
+    padding: 8px 0;
+}
+
+.reply-label {
+    font-weight: 600;
+    color: var(--accent-color);
+    margin-right: 8px;
+}
+
+/* Button container styles */
+.button-container {
+    display: flex;
+    gap: 8px;
+}
+
+.action-button {
+    min-width: auto;
+    padding: 0 8px;
+}
+
+/* Flexbox utilities */
+.flex-container {
+    display: flex;
+}
+
+.space-between {
+    justify-content: space-between;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Margin utilities */
+.margin-top-8 {
+    margin-top: 8px;
+}
+
+.margin-top-16 {
+    margin-top: 16px;
+}
+
+/* Loading indicator */
+.loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+[data-theme="dark"] .loading-container {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-radius: 50%;
+    border-top: 4px solid var(--accent-color);
+    animation: spin 1s linear infinite;
+}
+
+.loading-message {
+    margin-top: 16px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
