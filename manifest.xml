@@ -15,11 +15,12 @@
   <Description DefaultValue="Summarize and translate emails using Gemini AI."/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/icon-128.png"/>
-  <SupportUrl DefaultValue="https://github.com/AlanSynn/readmedarling"/>
+  <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
   <!-- 허용된 도메인 -->
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://alansynn.github.io</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
 

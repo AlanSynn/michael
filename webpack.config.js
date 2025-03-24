@@ -85,11 +85,24 @@ module.exports = async (env, options) => {
               if (dev) {
                 return content;
               } else {
-                content = content
-                  .toString()
-                  .replace(new RegExp(addinDevName, "g"), addinName)
-                  .replace(new RegExp(urlDev, "g"), urlProd);
-                return content;
+                const contentStr = content.toString();
+                console.log('Original content:', contentStr);
+                console.log('Replacing:', {
+                  addinDevName,
+                  addinName,
+                  urlDev,
+                  urlProd
+                });
+
+                const escapedAddinDevName = addinDevName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const escapedUrlDev = urlDev.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+                const replaced = contentStr
+                  .replace(new RegExp(escapedAddinDevName, "g"), addinName)
+                  .replace(new RegExp(escapedUrlDev, "g"), urlProd);
+
+                console.log('Replaced content:', replaced);
+                return replaced;
               }
             },
           },
