@@ -9,17 +9,18 @@
   <!-- 기본 설정 -->
   <Id>9549e1d3-1ddc-4383-8b3a-d71952f8453a</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Read it for me, [Local]</ProviderName>
+  <ProviderName>Read it for me, Michael</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Read it for me, [Local]"/>
+  <DisplayName DefaultValue="Read it for me, Michael"/>
   <Description DefaultValue="Summarize and translate emails using Gemini AI."/>
   <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-128.png"/>
-  <SupportUrl DefaultValue="https://github.com/AlanSynn/readmedarling"/>
+  <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
   <!-- 허용된 도메인 -->
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://alansynn.github.io</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
 
@@ -115,7 +116,7 @@
         <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="Read it for me, [Local]"/>
+        <bt:String id="GroupLabel" DefaultValue="Read it for me, Michael"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
         <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/>
       </bt:ShortStrings>
@@ -188,7 +189,7 @@
           <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
-          <bt:String id="GroupLabel" DefaultValue="Read it for me, [Local]"/>
+          <bt:String id="GroupLabel" DefaultValue="Read it for me, Michael"/>
           <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
           <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/>
         </bt:ShortStrings>
