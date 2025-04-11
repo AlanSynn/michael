@@ -6,21 +6,20 @@
   xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
   xsi:type="MailApp">
 
-  <!-- 기본 설정 -->
+  <!-- Basic settings -->
   <Id>9549e1d3-1ddc-4383-8b3a-d71952f8453a</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName DefaultValue="Michael [Local]"/>
+  <ProviderName>Michael</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Michael [Local]"/>
+  <DisplayName DefaultValue="Michael"/>
   <Description DefaultValue="Your AI sidekick for summarizing and translating emails using Gemini AI."/>
   <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
-  <!-- 허용된 도메인 -->
+  <!-- Allowed domains -->
   <AppDomains>
     <AppDomain>https://alansynn.github.io/michael</AppDomain>
-    <AppDomain>https://alansynn.github.io</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
 
@@ -28,14 +27,14 @@
     <Host Name="Mailbox"/>
   </Hosts>
 
-  <!-- 최소 요구사항 -->
+  <!-- Minimum requirements -->
   <Requirements>
     <Sets>
       <Set Name="Mailbox" MinVersion="1.1"/>
     </Sets>
   </Requirements>
 
-  <!-- 기본 폼 설정 (VersionOverrides가 있어도 필요함) -->
+  <!-- Default form settings (required even with VersionOverrides) -->
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
@@ -47,14 +46,14 @@
 
   <Permissions>ReadWriteItem</Permissions>
 
-  <!-- 기본 규칙 (VersionOverrides가 있어도 필요함) -->
+  <!-- Default rules (required even with VersionOverrides) -->
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
   </Rule>
 
   <DisableEntityHighlighting>false</DisableEntityHighlighting>
 
-  <!-- 버전 오버라이드 (최신 기능) -->
+  <!-- Version overrides (latest features) -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Requirements>
       <bt:Sets DefaultMinVersion="1.3">
@@ -64,8 +63,7 @@
     <Hosts>
       <Host xsi:type="MailHost">
         <DesktopFormFactor>
-          <!-- 주석 처리: Command 버튼 기능을 위한 FunctionFile -->
-          <!-- <FunctionFile resid="Commands.Url"/> -->
+          <FunctionFile resid="Commands.Url"/>
           <ExtensionPoint xsi:type="MessageReadCommandSurface">
             <OfficeTab id="TabDefault">
               <Group id="msgReadGroup">
@@ -85,8 +83,6 @@
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
-                <!-- 주석 처리: Command 버튼 (ActionButton) -->
-                <!--
                 <Control xsi:type="Button" id="ActionButton">
                   <Label resid="ActionButton.Label"/>
                   <Supertip>
@@ -102,7 +98,6 @@
                     <FunctionName>action</FunctionName>
                   </Action>
                 </Control>
-                -->
               </Group>
             </OfficeTab>
           </ExtensionPoint>
@@ -116,20 +111,17 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <!-- 주석 처리: Command 기능을 위한 Commands.Url -->
-        <!-- <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/> -->
+        <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GroupLabel" DefaultValue="Michael [Local]"/>
-        <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
-        <!-- 주석 처리: Command 버튼 레이블 -->
-        <!-- <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/> -->
+        <bt:String id="GroupLabel" DefaultValue="Michael"/>
+        <bt:String id="TaskpaneButton.Label" DefaultValue="Pane"/>
+        <bt:String id="ActionButton.Label" DefaultValue="Command"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane to summarize or translate the email."/>
-        <!-- 주석 처리: Command 버튼 툴팁 -->
-        <!-- <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/> -->
+        <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/>
       </bt:LongStrings>
     </Resources>
 
@@ -143,8 +135,7 @@
       <Hosts>
         <Host xsi:type="MailHost">
           <DesktopFormFactor>
-            <!-- 주석 처리: V1.1 Command 버튼 기능을 위한 FunctionFile -->
-            <!-- <FunctionFile resid="Commands.Url"/> -->
+            <FunctionFile resid="Commands.Url"/>
             <ExtensionPoint xsi:type="MessageReadCommandSurface">
               <OfficeTab id="TabDefault">
                 <Group id="msgReadGroup">
@@ -165,8 +156,6 @@
                       <SupportsPinning>true</SupportsPinning>
                     </Action>
                   </Control>
-                  <!-- 주석 처리: V1.1 Command 버튼 (ActionButton) -->
-                  <!--
                   <Control xsi:type="Button" id="ActionButton">
                     <Label resid="ActionButton.Label"/>
                     <Supertip>
@@ -182,7 +171,6 @@
                       <FunctionName>action</FunctionName>
                     </Action>
                   </Control>
-                  -->
                 </Group>
               </OfficeTab>
             </ExtensionPoint>
@@ -196,20 +184,17 @@
           <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
         </bt:Images>
         <bt:Urls>
-          <!-- 주석 처리: V1.1 Command 기능을 위한 Commands.Url -->
-          <!-- <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/> -->
+          <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
           <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
-          <bt:String id="GroupLabel" DefaultValue="Michael [Local]"/>
-          <bt:String id="TaskpaneButton.Label" DefaultValue="Summarize &amp; Translate"/>
-          <!-- 주석 처리: V1.1 Command 버튼 레이블 -->
-          <!-- <bt:String id="ActionButton.Label" DefaultValue="Summarize Email"/> -->
+          <bt:String id="GroupLabel" DefaultValue="Michael"/>
+          <bt:String id="TaskpaneButton.Label" DefaultValue="Pane"/>
+          <bt:String id="ActionButton.Label" DefaultValue="Command"/>
         </bt:ShortStrings>
         <bt:LongStrings>
           <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane to summarize or translate the email."/>
-          <!-- 주석 처리: V1.1 Command 버튼 툴팁 -->
-          <!-- <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/> -->
+          <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/>
         </bt:LongStrings>
       </Resources>
     </VersionOverrides>
