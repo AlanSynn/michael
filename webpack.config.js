@@ -7,8 +7,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://alansynn.github.io/michael/"; // Updated to your GitHub Pages URL
 
-const addinName = "Read it for me, Michael";
-const addinDevName = "Read it for me, [Local]";
+const addinName = "Michael";
+const addinDevName = "Michael [Local]";
 
 async function getHttpsOptions() {
   const httpsOptions = await devCerts.getHttpsServerOptions();
