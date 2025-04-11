@@ -48,6 +48,47 @@
     --code-background: #3a3a3a;
 }
 
+/* Add dark mode specific styles for settings dropdown */
+[data-theme="dark"] .settings-dropdown {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .settings-section h3 {
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .ms-Label {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ms-TextField-field {
+    background-color: #3c3c3c;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+[data-theme="dark"] .ms-TextField-field::placeholder {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .ms-TextField-field:focus {
+    border-color: var(--accent-color);
+    outline: none;
+}
+
+[data-theme="dark"] .ms-Dropdown-select {
+    background-color: #3c3c3c;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+[data-theme="dark"] .ms-Dropdown-select option {
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+
 html,
 body {
     width: 100%;
@@ -124,6 +165,21 @@ body {
 
 .action-button span {
     font-weight: 500;
+}
+
+.action-button--primary {
+    background-color: #0078d4;
+    color: white;
+}
+
+.action-button--primary:hover {
+    background-color: #106ebe;
+}
+
+.action-button--primary:disabled {
+    background-color: #c8c8c8;
+    color: #666666;
+    cursor: not-allowed;
 }
 
 /* Main content styles */
@@ -637,4 +693,194 @@ html[data-font-size="large"] {
 
 #dev-server-group {
     margin-top: 8px;
+}
+
+/* Email Content Styles */
+.email-content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.email-content-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.email-content-body {
+    max-height: 300px;
+    overflow-y: auto;
+    background-color: var(--background-secondary);
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.email-content-body pre {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
+.event-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.event-details-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.event-details-body {
+    background-color: var(--background-secondary);
+    border-radius: 4px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.event-details-body p {
+    margin: 8px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.error-message {
+    color: var(--error-color);
+    font-weight: 500;
+}
+
+/* Added button styles */
+#copy-email-content {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.3s;
+}
+
+#copy-email-content:hover {
+    background-color: var(--accent-dark);
+}
+
+#copy-email-content:active {
+    transform: translateY(1px);
+}
+
+/* Add styles for settings-group in dark mode */
+[data-theme="dark"] .settings-group {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    color: #f3f3f3;
+}
+
+[data-theme="dark"] .settings-dropdown-container {
+    background-color: var(--background-primary);
+    padding: 10px;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] textarea.ms-TextField-field {
+    background-color: #3c3c3c;
+    color: #ffffff;
+    border-color: #555555;
+}
+
+[data-theme="dark"] .ms-Button {
+    border-color: #555555;
+    background-color: #3c3c3c;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .ms-Button:hover {
+    background-color: #4a4a4a;
+}
+
+[data-theme="dark"] .ms-Button--disabled {
+    background-color: #2a2a2a;
+    color: #a0a0a0;
+    cursor: not-allowed;
+    border-color: #444444;
+}
+
+/* Improve visibility of settings labels in dark mode */
+[data-theme="dark"] .settings-group label {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Specific enhancement for API key field */
+[data-theme="dark"] label[for="dropdown-api-key"] {
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+/* Export markdown button styles */
+#dropdown-export-markdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #7b61ff;
+    color: white;
+    border-color: #7b61ff;
+}
+
+#dropdown-export-markdown:hover {
+    background-color: #6a52e0;
+    border-color: #6a52e0;
+}
+
+[data-theme="dark"] #dropdown-export-markdown {
+    background-color: #8a72ff;
+    color: white;
+    border-color: #8a72ff;
+}
+
+[data-theme="dark"] #dropdown-export-markdown:hover {
+    background-color: #7960f9;
+    border-color: #7960f9;
+}
+
+/* Copy Templates button styles */
+#dropdown-copy-templates {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #00b7c3;
+    color: white;
+    border-color: #00b7c3;
+}
+
+#dropdown-copy-templates:hover {
+    background-color: #009da8;
+    border-color: #009da8;
+}
+
+[data-theme="dark"] #dropdown-copy-templates {
+    background-color: #00c8d7;
+    color: white;
+    border-color: #00c8d7;
+}
+
+[data-theme="dark"] #dropdown-copy-templates:hover {
+    background-color: #00adb9;
+    border-color: #00adb9;
 }
