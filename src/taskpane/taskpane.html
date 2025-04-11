@@ -43,6 +43,10 @@
                 <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
                 <span>T&S</span>
             </button>
+            <button id="calendar-event" class="action-button" title="Add to Calendar" disabled>
+                <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
+                <span>Calendar</span>
+            </button>
             <button id="settings-toggle" class="action-button" aria-label="Settings" title="Settings">
                 <i class="ms-Icon ms-Icon--Settings" aria-hidden="true"></i>
             </button>
@@ -129,6 +133,19 @@
                     </select>
                 </div>
                 <div class="settings-group">
+                    <label for="dropdown-event-title-language">Event Title Language:</label>
+                    <select id="dropdown-event-title-language" class="ms-Dropdown-select">
+                        <option value="en">English</option>
+                        <option value="ko">Korean</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh_cn">Chinese</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="it">Italian</option>
+                    </select>
+                </div>
+                <div class="settings-group">
                     <label for="dropdown-autorun">Auto-Run:</label>
                     <select id="dropdown-autorun" class="ms-Dropdown-select">
                         <option value="false">Disabled</option>
@@ -162,6 +179,12 @@
         <div class="settings-actions">
             <button id="dropdown-reset-all" class="ms-Button">
                 <span class="ms-Button-label">Reset</span>
+            </button>
+            <button id="dropdown-copy-templates" class="ms-Button">
+                <span class="ms-Button-label">Copy to Clipboard</span>
+            </button>
+            <button id="dropdown-export-markdown" class="ms-Button">
+                <span class="ms-Button-label">Export as Markdown</span>
             </button>
             <button id="dropdown-save-settings" class="ms-Button ms-Button--primary">
                 <span class="ms-Button-label">Save Settings</span>

@@ -28,7 +28,8 @@ const TYPES = {
   SUMMARIZE: 0,
   TRANSLATE: 1,
   TRANSLATE_SUMMARIZE: 2,
-  REPLY: 3
+  REPLY: 3,
+  CALENDAR: 4
 };
 
 // Default templates
@@ -141,7 +142,7 @@ Office.onReady((info) => {
         let autorunEnabled = false;
         let selectedOption = null;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 autorunEnabled = settings.autorun === 'true';
@@ -173,10 +174,12 @@ Office.onReady((info) => {
         document.getElementById("summarize").addEventListener("click", summarizeEmail);
         document.getElementById("translate").addEventListener("click", translateEmail);
         document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
+        document.getElementById("calendar-event").addEventListener("click", handleCalendarEvent);
         document.getElementById("settings-toggle").addEventListener("click", toggleSettingsDropdown);
         document.getElementById("dropdown-close-settings").addEventListener("click", toggleSettingsDropdown);
         document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
         document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
+        document.getElementById("dropdown-export-markdown").addEventListener("click", exportTemplatesAsMarkdown);
         document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
             if (event.key === "Enter") {
                 saveDropdownSettings();
@@ -223,7 +226,7 @@ Office.onReady((info) => {
                 let autorunEnabled = false;
                 let selectedOption = null;
                 try {
-                    const savedSettings = localStorage.getItem('michael_settings');
+                    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
                     if (savedSettings) {
                         const settings = JSON.parse(savedSettings);
                         autorunEnabled = settings.autorun === 'true';
@@ -260,7 +263,7 @@ Office.onReady((info) => {
                             let autorunEnabled = false;
                             let selectedOption = null;
                             try {
-                                const savedSettings = localStorage.getItem('michael_settings');
+                                const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
                                 if (savedSettings) {
                                     const settings = JSON.parse(savedSettings);
                                     autorunEnabled = settings.autorun === 'true';
@@ -297,6 +300,27 @@ Office.onReady((info) => {
                 }
             }
         );
+
+        // Update calendar button state when email changes
+        Office.context.mailbox.addHandlerAsync(
+            Office.EventType.ItemChanged,
+            function (args) {
+                updateCalendarButtonState();
+            },
+            function (result) {
+                if (result.status === Office.AsyncResultStatus.Succeeded) {
+                    result.value.addHandlerAsync(
+                        Office.EventType.ItemChanged,
+                        function (args) {
+                            updateCalendarButtonState();
+                        }
+                    );
+                }
+            }
+        );
+
+        // Initial calendar button state update
+        updateCalendarButtonState();
     }
 });
 
@@ -437,7 +461,7 @@ function saveDropdownSettings() {
   // Get existing settings
   let settings = {};
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
     if (savedSettings) {
       settings = JSON.parse(savedSettings);
     }
@@ -449,6 +473,7 @@ function saveDropdownSettings() {
   const apiKey = document.getElementById('dropdown-api-key').value;
   const model = document.getElementById('dropdown-model').value;
   const language = document.getElementById('dropdown-language').value;
+  const eventTitleLanguage = document.getElementById('dropdown-event-title-language').value;
   const theme = document.getElementById('dropdown-theme').value;
   const fontSize = document.getElementById('dropdown-font-size').value;
   const tldrMode = document.getElementById('dropdown-tldr-mode').value;
@@ -466,6 +491,7 @@ function saveDropdownSettings() {
   settings.apiKey = apiKey;
   settings.model = model;
   settings.defaultLanguage = language;
+  settings.eventTitleLanguage = eventTitleLanguage;
   settings.theme = theme;
   settings.fontSize = fontSize;
   settings.tldrMode = tldrMode;
@@ -486,7 +512,14 @@ function saveDropdownSettings() {
   settings.templates.translateSummarize = translateSummarizeTemplate;
 
   // Save settings
-  localStorage.setItem('michael_settings', JSON.stringify(settings));
+  localStorage.setItem('my_sidekick_michael_settings', JSON.stringify(settings));
+
+  // Save API key separately
+  if (apiKey) {
+    localStorage.setItem("my_sidekick_michael_api_key", apiKey);
+  } else {
+    localStorage.removeItem("my_sidekick_michael_api_key"); // Remove if empty
+  }
 
   // Apply theme if changed
   localStorage.setItem('theme', theme);
@@ -511,6 +544,13 @@ function saveDropdownSettings() {
  * Reset template fields to defaults
  */
 function resetTemplates() {
+  // Save default templates back into the main settings object
+  const currentSettingsText = localStorage.getItem("my_sidekick_michael_settings");
+  const currentSettings = currentSettingsText ? JSON.parse(currentSettingsText) : {};
+  currentSettings.templates = DEFAULT_TEMPLATES;
+  localStorage.setItem("my_sidekick_michael_settings", JSON.stringify(currentSettings));
+
+  // Update textareas
   document.getElementById('dropdown-summarize-template').value = DEFAULT_TEMPLATES.summarize;
   document.getElementById('dropdown-translate-template').value = DEFAULT_TEMPLATES.translate;
   // Add the new translateSummarize template to the reset function
@@ -525,8 +565,10 @@ function resetTemplates() {
  */
 function loadDropdownSettings() {
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const apiKey = localStorage.getItem("my_sidekick_michael_api_key");
 
+    // Load main settings
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
 
@@ -534,6 +576,7 @@ function loadDropdownSettings() {
       if (settings.apiKey) document.getElementById('dropdown-api-key').value = settings.apiKey;
       if (settings.model) document.getElementById('dropdown-model').value = settings.model;
       if (settings.defaultLanguage) document.getElementById('dropdown-language').value = settings.defaultLanguage;
+      if (settings.eventTitleLanguage) document.getElementById('dropdown-event-title-language').value = settings.eventTitleLanguage;
       if (settings.theme) document.getElementById('dropdown-theme').value = settings.theme;
       if (settings.fontSize) document.getElementById('dropdown-font-size').value = settings.fontSize;
       if (settings.tldrMode) document.getElementById('dropdown-tldr-mode').value = settings.tldrMode;
@@ -579,6 +622,11 @@ function loadDropdownSettings() {
       // No settings found, load default templates
       resetTemplates();
     }
+
+    // Load API key
+    if (apiKey) {
+      document.getElementById('dropdown-api-key').value = apiKey;
+    }
   } catch (error) {
     console.error('Error loading dropdown settings:', error);
     // If there's an error, reset to defaults
@@ -616,7 +664,7 @@ async function generateContent(prompt, apiKey, modelOverride = null, isTldr = fa
         model = modelOverride;
     } else {
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.model) {
@@ -652,7 +700,8 @@ async function generateContent(prompt, apiKey, modelOverride = null, isTldr = fa
                     topK: 32,
                     topP: 0.95,
                     maxOutputTokens: isTldr ? 800 : 8192, // Limit tokens for TL;DR
-                }
+                },
+                safetySettings: safetySettings
             })
         });
 
@@ -708,20 +757,15 @@ function getLanguageText(languageCode) {
   }
 }
 
-// Get API key from settings
+// Get API key from local storage
 function getApiKey() {
-  const savedSettings = localStorage.getItem('michael_settings');
-  if (savedSettings) {
-    const settings = JSON.parse(savedSettings);
-    return settings.apiKey;
-  }
-  return null;
+  return localStorage.getItem("my_sidekick_michael_api_key");
 }
 
 // Get language from settings
 function getLanguage() {
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.defaultLanguage) {
@@ -755,7 +799,7 @@ async function summarizeEmail() {
         // Get template from storage or use default
         let template = DEFAULT_TEMPLATES.summarize;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.templates && settings.templates.summarize) {
@@ -774,7 +818,7 @@ async function summarizeEmail() {
         // Check for TL;DR mode
         let tldrMode = true;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.tldrMode) {
@@ -828,7 +872,7 @@ async function translateEmail() {
         // Get template from storage or use default
         let template = DEFAULT_TEMPLATES.translate;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.templates && settings.templates.translate) {
@@ -847,7 +891,7 @@ async function translateEmail() {
         // Check for TL;DR mode
         let tldrMode = true;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.tldrMode) {
@@ -962,7 +1006,7 @@ function markdownToHtml(markdown) {
   // Get the current font size from settings
   let fontSize = 'medium';
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.fontSize) {
@@ -1056,7 +1100,7 @@ async function translateAndSummarizeEmail() {
         // Get template from storage or use default
         let template = DEFAULT_TEMPLATES.translateSummarize;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.templates && settings.templates.translateSummarize) {
@@ -1079,7 +1123,7 @@ async function translateAndSummarizeEmail() {
         // Check for TL;DR mode
         let tldrMode = true;
         try {
-            const savedSettings = localStorage.getItem('michael_settings');
+            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
             if (savedSettings) {
                 const settings = JSON.parse(savedSettings);
                 if (settings.tldrMode) {
@@ -1172,7 +1216,7 @@ function showResults(content, type) {
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-        const savedSettings = localStorage.getItem('michael_settings');
+        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             if (settings.tldrMode) {
@@ -1244,14 +1288,14 @@ function showResults(content, type) {
     // Show/hide generate reply button based on type and settings
     const generateReplyButton = document.getElementById("generate-reply");
     if (generateReplyButton) {
-        const showReply = localStorage.getItem('michael_settings') &&
-            JSON.parse(localStorage.getItem('michael_settings')).showReply === 'true';
+        const showReply = localStorage.getItem('my_sidekick_michael_settings') &&
+            JSON.parse(localStorage.getItem('my_sidekick_michael_settings')).showReply === 'true';
         generateReplyButton.style.display = type === TYPES.REPLY ? "none" : (showReply ? "inline-block" : "none");
     }
 
     // Apply font size from settings
     try {
-        const savedSettings = localStorage.getItem('michael_settings');
+        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             if (settings.fontSize) {
@@ -1553,7 +1597,7 @@ function toggleSettings() {
  */
 function saveApiKey() {
   const apiKey = document.getElementById("api-key-input").value;
-  localStorage.setItem("readmedarling_api_key", apiKey);
+  localStorage.setItem("my_sidekick_michael_api_key", apiKey);
   showNotification("API key saved successfully!", "success");
   toggleSettings();
 }
@@ -1659,6 +1703,9 @@ function resetAllSettings() {
     // Reset language selection
     document.getElementById('dropdown-language').value = 'ko';
 
+    // Reset event title language selection
+    document.getElementById('dropdown-event-title-language').value = 'en';
+
     // Reset theme selection
     document.getElementById('dropdown-theme').value = 'system';
 
@@ -1690,7 +1737,8 @@ function resetAllSettings() {
     document.getElementById('dropdown-api-key').value = '';
 
     // Clear saved settings from localStorage
-    localStorage.removeItem('michael_settings');
+    localStorage.removeItem('michael_api_key');
+    localStorage.removeItem('michael_settings'); // Clear all settings as well
 
     // Apply default theme
     applyCurrentTheme();
@@ -1719,5 +1767,467 @@ function updateDevBadges(show) {
     }
     if (footerDevBadge) {
         footerDevBadge.style.display = show ? 'block' : 'none';
+    }
+}
+
+// Get event title language from settings
+function getEventTitleLanguage() {
+  try {
+    const savedSettings = localStorage.getItem('michael_settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.eventTitleLanguage) {
+        return settings.eventTitleLanguage;
+      }
+    }
+    return 'en'; // Default to English
+  } catch (error) {
+    console.error('Error getting event title language:', error);
+    return 'en';
+  }
+}
+
+// Helper function to parse event details using Gemini API
+async function parseEventDetailsWithGemini(emailContent) {
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      throw new Error('API key not found');
+    }
+
+    // Get event title language from settings
+    const titleLanguage = getEventTitleLanguage();
+    let langInstructions = "";
+
+    // Set language-specific instructions
+    if (titleLanguage === 'en') {
+      langInstructions = `Event title should be in English.
+      If the event has a type or category, include it in square brackets ([]) at the beginning, then if there's a presenter and topic, write the presenter's name first, followed by a hyphen (-) and then the topic.`;
+    } else if (titleLanguage === 'ko') {
+      langInstructions = `이벤트 제목은 한국어로 작성해주세요.
+      이벤트 유형이나 카테고리가 있다면 대괄호([])로 먼저 표시하고, 발표자와 주제가 있다면 발표자 이름을 먼저 쓰고 하이픈(-) 후에 주제를 적어주세요.`;
+    } else if (titleLanguage === 'ja') {
+      langInstructions = `イベントのタイトルは日本語で記載してください。
+      イベントのタイプやカテゴリがある場合は、角括弧（[]）で囲んで最初に表示し、発表者とトピックがある場合は、発表者の名前を最初に書き、ハイフン（-）の後にトピックを書いてください。`;
+    } else if (titleLanguage === 'zh_cn') {
+      langInstructions = `事件标题应该用中文书写。
+      如果事件有类型或类别，请使用方括号（[]）将其括起来并放在开头，如果有演讲者和主题，请先写演讲者的名字，然后是连字符（-），再写主题。`;
+    } else {
+      // Default English instructions for other languages
+      langInstructions = `Event title should be in ${getLanguageText(titleLanguage)}.
+      If the event has a type or category, include it in square brackets ([]) at the beginning, then if there's a presenter and topic, write the presenter's name first, followed by a hyphen (-) and then the topic.`;
+    }
+
+    const prompt = `Analyze the following email content and extract information needed to create a calendar event for Microsoft Graph API.
+    The response must be in valid JSON format and follow the format below exactly.
+    Do not use escape characters that would cause parsing issues.
+    Mark any information that cannot be found as null.
+
+    ${langInstructions}
+
+    Event title format examples:
+    - "[Event Type] Presenter - Topic"
+    - "[Conference Name] Presenter Name - Presentation Topic"
+    - "[Seminar Type] Speaker Name - Presentation Title"
+
+    Required JSON format:
+    {
+      "subject": "Meeting title",
+      "body": {
+        "contentType": "HTML",
+        "content": "Meeting description"
+      },
+      "start": {
+        "dateTime": "YYYY-MM-DDTHH:mm:ss",
+        "timeZone": "Asia/Seoul"
+      },
+      "end": {
+        "dateTime": "YYYY-MM-DDTHH:mm:ss",
+        "timeZone": "Asia/Seoul"
+      },
+      "location": {
+        "displayName": "Location name"
+      },
+      "attendees": [
+        {
+          "emailAddress": {
+            "address": "attendee@email.com",
+            "name": "Attendee Name"
+          },
+          "type": "required"
+        }
+      ],
+      "isOnlineMeeting": true,
+      "onlineMeetingProvider": "teamsForBusiness"
+    }
+
+    Important notes:
+    1. Convert dates and times to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
+    2. Email addresses must be in valid format
+    3. Use "Asia/Seoul" as the default timezone
+    4. Set isOnlineMeeting to true if there are Teams links or video conference details
+    5. Process special characters properly to ensure valid JSON
+    6. Return only JSON without any additional explanations or comments
+
+    Email content:
+    ${emailContent}`;
+
+    console.log('Sending prompt to Gemini API');
+    const result = await generateContent(prompt, apiKey, null, false);
+    console.log('Received response from Gemini API');
+
+    // Extract only the JSON part from the result (remove any explanations or comments)
+    let jsonText = result;
+
+    // Extract text that starts with { and ends with } (JSON only)
+    const jsonMatch = result.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonText = jsonMatch[0];
+    }
+
+    console.log('Extracted JSON text:', jsonText);
+
+    // Try to parse JSON
+    try {
+      const eventDetails = JSON.parse(jsonText);
+      console.log('Successfully parsed event details:', eventDetails);
+
+      // Validate required fields
+      if (!eventDetails.subject) {
+        throw new Error('Event title not found.');
+      }
+
+      if (!eventDetails.start?.dateTime) {
+        throw new Error('Event start time not found.');
+      }
+
+      if (!eventDetails.end?.dateTime) {
+        throw new Error('Event end time not found.');
+      }
+
+      // Validate date format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+      if (!dateRegex.test(eventDetails.start.dateTime)) {
+        throw new Error('Invalid start time format. (Should be YYYY-MM-DDTHH:mm:ss format)');
+      }
+
+      if (!dateRegex.test(eventDetails.end.dateTime)) {
+        throw new Error('Invalid end time format. (Should be YYYY-MM-DDTHH:mm:ss format)');
+      }
+
+      return eventDetails;
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Original response:', result);
+      throw new Error('Failed to extract event information: ' + parseError.message);
+    }
+  } catch (error) {
+    console.error('Error extracting event information:', error);
+    throw error;
+  }
+}
+
+// Create calendar event using Outlook Add-in API
+async function createCalendarEvent(eventDetails) {
+  try {
+    // Validate required fields
+    if (!eventDetails.subject || !eventDetails.start?.dateTime || !eventDetails.end?.dateTime) {
+      throw new Error('Required event information is missing.');
+    }
+
+    // Convert to Outlook Add-in API format
+    // Create Date objects from ISO 8601 strings
+    const startDate = new Date(eventDetails.start.dateTime);
+    const endDate = new Date(eventDetails.end.dateTime);
+
+    // Convert attendee list to string arrays
+    const requiredAttendees = [];
+    const optionalAttendees = [];
+
+    if (eventDetails.attendees && eventDetails.attendees.length > 0) {
+      eventDetails.attendees.forEach(attendee => {
+        if (attendee.emailAddress && attendee.emailAddress.address) {
+          if (attendee.type === 'optional') {
+            optionalAttendees.push(attendee.emailAddress.address);
+          } else {
+            requiredAttendees.push(attendee.emailAddress.address);
+          }
+        }
+      });
+    }
+
+    // Create appointment format - according to Outlook API
+    const appointmentData = {
+      requiredAttendees: requiredAttendees,
+      optionalAttendees: optionalAttendees,
+      start: startDate,
+      end: endDate,
+      location: eventDetails.location?.displayName || '',
+      body: eventDetails.body?.content || '',
+      subject: eventDetails.subject
+    };
+
+    console.log('Creating appointment with data:', JSON.stringify(appointmentData));
+
+    // Display appointment form - using new appointment creation method
+    Office.context.mailbox.displayNewAppointmentForm({
+      requiredAttendees: requiredAttendees,
+      optionalAttendees: optionalAttendees,
+      start: startDate,
+      end: endDate,
+      location: eventDetails.location?.displayName || '',
+      body: eventDetails.body?.content || '',
+      subject: eventDetails.subject
+    });
+
+    showNotification(`Event '${eventDetails.subject}' has been created.`, 'info');
+    return true;
+  } catch (error) {
+    showNotification(`Failed to create event: ${error.message}`, 'error');
+    console.error('Error creating calendar event:', error);
+    throw error;
+  }
+}
+
+// Check if email content is a calendar event
+async function checkIfCalendarEvent(emailContent) {
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      console.error('API key not found');
+      return false;
+    }
+
+    const prompt = `Check if the following email content is a calendar event (meeting, appointment, schedule, etc.).
+    Return true if the email content includes one or more of the following:
+    - Date and time information
+    - Meeting-related keywords (meeting, conference, appointment, schedule, calendar, etc.)
+    - Attendee information
+    - Location information
+    - Schedule-related actions (attendance confirmation, add to calendar, etc.)
+
+    Email content:
+    ${emailContent}
+
+    Your response must only contain "true" or "false".`;
+
+    const result = await generateContent(prompt, apiKey, null, true);
+    return result.toLowerCase().trim() === 'true';
+  } catch (error) {
+    console.error('Error checking if calendar event:', error);
+    return false;
+  }
+}
+
+// Handle calendar event button click
+async function handleCalendarEvent() {
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    showNotification("Please add your API key in settings", 'error');
+    toggleSettingsDropdown();
+    return;
+  }
+
+  showLoading("Creating calendar event...");
+
+  try {
+    const emailContent = await getEmailContent();
+
+    // Display result section
+    document.getElementById("landing-screen").style.display = "none";
+    document.getElementById("result-section").style.display = "block";
+
+    // Display email content and prepare copy button
+    document.getElementById("tldr-content").innerHTML = `
+      <div class="email-content-header">
+        <h3>Email Content</h3>
+        <button id="copy-email-content" class="ms-Button ms-Button--primary">
+          <span class="ms-Button-label">Copy to Clipboard</span>
+        </button>
+      </div>
+      <div class="email-content-body">
+        <pre style="white-space: pre-wrap; word-break: break-word;">${emailContent}</pre>
+      </div>
+    `;
+
+    // Add event listener to clipboard copy button
+    document.getElementById("copy-email-content").addEventListener("click", function() {
+      navigator.clipboard.writeText(emailContent)
+        .then(() => {
+          showNotification("Email content copied to clipboard", 'info');
+        })
+        .catch(err => {
+          console.error('Error copying to clipboard:', err);
+          showNotification("Failed to copy to clipboard", 'error');
+        });
+    });
+
+    try {
+      // Parse event details with Gemini API
+      const eventDetails = await parseEventDetailsWithGemini(emailContent);
+
+      // Display extracted event details
+      document.getElementById("result-content").innerHTML = `
+        <div class="event-details-header">
+          <h3>Extracted Event Details</h3>
+        </div>
+        <div class="event-details-body">
+          <p><strong>Subject:</strong> ${eventDetails.subject || 'Not found'}</p>
+          <p><strong>Start:</strong> ${eventDetails.start?.dateTime || 'Not found'}</p>
+          <p><strong>End:</strong> ${eventDetails.end?.dateTime || 'Not found'}</p>
+          <p><strong>Location:</strong> ${eventDetails.location?.displayName || 'Not found'}</p>
+        </div>
+      `;
+
+      // Create calendar event
+      await createCalendarEvent(eventDetails);
+
+    } catch (extractionError) {
+      console.error('Event extraction error:', extractionError);
+      // Clean up error message by removing the prefix if present
+      const errorMessage = extractionError.message;
+      const cleanedMessage = errorMessage.includes('Failed to extract event information:')
+        ? errorMessage.split('Failed to extract event information:')[1].trim()
+        : errorMessage;
+
+      document.getElementById("result-content").innerHTML = `
+        <div class="event-details-header">
+          <h3>Event Extraction Failed</h3>
+        </div>
+        <div class="event-details-body">
+          <p class="error-message">${cleanedMessage}</p>
+        </div>
+      `;
+
+      showNotification(`Event extraction failed: ${cleanedMessage}`, 'error');
+    }
+  } catch (error) {
+    console.error('Calendar event handling error:', error);
+    showNotification(`Error: ${error.message}`, 'error');
+  } finally {
+    // Hide loading and update button state
+    hideLoading();
+    updateCalendarButtonState();
+
+    // Enable show full content button
+    const expandButton = document.getElementById("expand-content");
+    if (expandButton) {
+      expandButton.disabled = false;
+      expandButton.classList.remove("ms-Button--disabled");
+      expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+      expandButton.classList.add('ms-Button--primary');
+
+      // Show full content container
+      document.getElementById("full-content-container").style.display = "block";
+    }
+  }
+}
+
+// Update calendar button state based on email content
+async function updateCalendarButtonState() {
+  try {
+    const emailContent = await getEmailContent();
+    const isCalendarEvent = await checkIfCalendarEvent(emailContent);
+
+    const calendarBtn = document.getElementById('calendar-event');
+    if (calendarBtn) {
+      if (isCalendarEvent) {
+        calendarBtn.disabled = false;
+        calendarBtn.classList.remove('action-button--disabled');
+        calendarBtn.classList.add('action-button--primary');
+        console.log('Calendar event detected, button enabled');
+      } else {
+        calendarBtn.disabled = true;
+        calendarBtn.classList.add('action-button--disabled');
+        calendarBtn.classList.remove('action-button--primary');
+        console.log('Not a calendar event, button disabled');
+      }
+    }
+  } catch (error) {
+    console.error('Error updating calendar button state:', error);
+  }
+}
+
+/**
+ * Export current templates as markdown file
+ */
+function exportTemplatesAsMarkdown() {
+    try {
+        // Get current settings
+        const savedSettings = localStorage.getItem('michael_settings');
+        const settings = savedSettings ? JSON.parse(savedSettings) : {};
+        const apiKey = localStorage.getItem('michael_api_key') || 'Not Set'; // Get API key
+
+        // Get current date for filename
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD format
+
+        // Get current user information if available
+        let userInfo = '';
+        try {
+            if (Office.context.mailbox && Office.context.mailbox.userProfile) {
+                const user = Office.context.mailbox.userProfile;
+                userInfo = `\n\n*Exported by: ${user.displayName} (${user.emailAddress})*`;
+            }
+        } catch (err) {
+            console.log('User profile not available');
+        }
+
+        // Create markdown content
+        let markdownContent = `# Michael Prompt Templates\n\n`;
+        markdownContent += `*Exported on: ${now.toLocaleString()}*${userInfo}\n\n`;
+
+        // Add model information
+        markdownContent += `## General Settings\n\n`;
+        markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
+        markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
+        markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
+
+        // Add prompts
+        markdownContent += `## Prompt Templates\n\n`;
+
+        // Summarize template
+        markdownContent += `### Summarize Template\n\n\`\`\`\n${
+            settings.templates && settings.templates.summarize ?
+            settings.templates.summarize :
+            'No template defined'
+        }\n\`\`\`\n\n`;
+
+        // Translate template
+        markdownContent += `### Translate Template\n\n\`\`\`\n${
+            settings.templates && settings.templates.translate ?
+            settings.templates.translate :
+            'No template defined'
+        }\n\`\`\`\n\n`;
+
+        // Translate & Summarize template
+        markdownContent += `### Translate & Summarize Template\n\n\`\`\`\n${
+            settings.templates && settings.templates.translateSummarize ?
+            settings.templates.translateSummarize :
+            'No template defined'
+        }\n\`\`\`\n\n`;
+
+        // Create download link
+        const blob = new Blob([markdownContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `michael-templates-${dateStr}.md`;
+
+        // Append to body, click, and remove
+        document.body.appendChild(a);
+        a.click();
+
+        // Clean up
+        setTimeout(function() {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+
+        showNotification('Templates exported successfully', 'success');
+    } catch (error) {
+        console.error('Error exporting templates:', error);
+        showNotification('Failed to export templates', 'error');
     }
 }

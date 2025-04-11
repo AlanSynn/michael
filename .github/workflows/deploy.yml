@@ -16,6 +16,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Replace localhost URLs in Manifest
+        run: sed -i 's|https://localhost:3000|https://alansynn.github.io/michael|g' manifest.xml
+        working-directory: ${{ github.workspace }} # Ensure it runs in the repo root
+
+      - name: Remove [Local] suffix from Manifest
+        run: sed -i 's|Michael \\[Local\\]|Michael|g' manifest.xml
+        working-directory: ${{ github.workspace }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
