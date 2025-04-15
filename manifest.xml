@@ -12,9 +12,9 @@
   <ProviderName>Michael [Local]</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Michael [Local]"/>
-  <Description DefaultValue="Your AI sidekick for summarizing and translating emails using Gemini AI."/>
-  <IconUrl DefaultValue="https://localhost:3000/assets/icon.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/michael-white.png"/>
+  <Description DefaultValue="Meet, Michael. Your AI sidekick for summarizing and translating emails using Gemini AI."/>
+  <IconUrl DefaultValue="https://localhost:3000/assets/icon-black.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/michael-black.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
   <!-- Allowed domains -->
