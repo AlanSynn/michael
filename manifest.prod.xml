@@ -8,18 +8,18 @@
 
   <!-- Basic settings -->
   <Id>9549e1d3-1ddc-4383-8b3a-d71952f8453a</Id>
-  <Version>1.1.0.0</Version>
+  <Version>1.1.1.0</Version>
   <ProviderName>Michael</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Michael"/>
   <Description DefaultValue="Meet, Michael. Your AI sidekick for summarizing and translating emails using Gemini AI."/>
-  <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-black.png"/>
-  <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/michael-black.png"/>
+  <IconUrl DefaultValue="https://alansynn.com/michael/assets/icon-black.png"/>
+  <HighResolutionIconUrl DefaultValue="https://alansynn.com/michael/assets/michael-black.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
   <!-- Allowed domains -->
   <AppDomains>
-    <AppDomain>https://alansynn.github.io/michael</AppDomain>
+    <AppDomain>https://alansynn.com/michael</AppDomain>
     <AppDomain>https://alansynn.com</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
@@ -39,7 +39,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+        <SourceLocation DefaultValue="https://alansynn.com/michael/taskpane.html"/>
         <RequestedHeight>450</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -93,13 +93,13 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
-        <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.github.io/michael/assets/icon-24.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.com/michael/assets/icon-16.png"/>
+        <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.com/michael/assets/icon-24.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.com/michael/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.com/michael/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.com/michael/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Michael"/>
@@ -149,18 +149,18 @@
       </Hosts>
       <Resources>
         <bt:Images>
-          <bt:Image id="Icon" DefaultValue="https://alansynn.github.io/michael/assets/icon.png"/>
-          <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
-          <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.github.io/michael/assets/icon-24.png"/>
-          <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
-          <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
-          <bt:Image id="logo-black" DefaultValue="https://alansynn.github.io/michael/assets/michael-black.png"/>
-          <bt:Image id="logo-white" DefaultValue="https://alansynn.github.io/michael/assets/michael-white.png"/>
-          <bt:Image id="banner-black" DefaultValue="https://alansynn.github.io/michael/assets/meet-michael-black.png"/>
-          <bt:Image id="banner-white" DefaultValue="https://alansynn.github.io/michael/assets/meet-michael-white.png"/>
+          <bt:Image id="Icon" DefaultValue="https://alansynn.com/michael/assets/icon.png"/>
+          <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.com/michael/assets/icon-16.png"/>
+          <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.com/michael/assets/icon-24.png"/>
+          <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.com/michael/assets/icon-32.png"/>
+          <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.com/michael/assets/icon-80.png"/>
+          <bt:Image id="logo-black" DefaultValue="https://alansynn.com/michael/assets/michael-black.png"/>
+          <bt:Image id="logo-white" DefaultValue="https://alansynn.com/michael/assets/michael-white.png"/>
+          <bt:Image id="banner-black" DefaultValue="https://alansynn.com/michael/assets/meet-michael-black.png"/>
+          <bt:Image id="banner-white" DefaultValue="https://alansynn.com/michael/assets/meet-michael-white.png"/>
         </bt:Images>
         <bt:Urls>
-          <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.com/michael/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
           <bt:String id="GroupLabel" DefaultValue="Michael"/>
