@@ -8,7 +8,7 @@
 
   <!-- Basic settings -->
   <Id>9549e1d3-1ddc-4383-8b3a-d71952f8453a</Id>
-  <Version>1.1.0.0</Version>
+  <Version>1.1.1.0</Version>
   <ProviderName>Michael [Local]</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Michael [Local]"/>

@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Replace localhost URLs in Manifest
-        run: sed -i 's|https://localhost:3000|https://alansynn.github.io/michael|g' manifest.xml
+        run: sed -i 's|https://localhost:3000|https://alansynn.com/michael|g' manifest.xml
         working-directory: ${{ github.workspace }} # Ensure it runs in the repo root
 
       - name: Remove [Local] suffix from Manifest
