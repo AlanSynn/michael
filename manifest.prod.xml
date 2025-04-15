@@ -13,13 +13,14 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Michael"/>
   <Description DefaultValue="Your AI sidekick for summarizing and translating emails using Gemini AI."/>
-  <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon-128.png"/>
+  <IconUrl DefaultValue="https://alansynn.github.io/michael/assets/icon.png"/>
+  <HighResolutionIconUrl DefaultValue="https://alansynn.github.io/michael/assets/michael-white.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
   <!-- Allowed domains -->
   <AppDomains>
     <AppDomain>https://alansynn.github.io/michael</AppDomain>
+    <AppDomain>https://alansynn.com</AppDomain>
     <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
   </AppDomains>
 
@@ -83,45 +84,29 @@
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
-                <Control xsi:type="Button" id="ActionButton">
-                  <Label resid="ActionButton.Label"/>
-                  <Supertip>
-                    <Title resid="ActionButton.Label"/>
-                    <Description resid="ActionButton.Tooltip"/>
-                  </Supertip>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon.16x16"/>
-                    <bt:Image size="32" resid="Icon.32x32"/>
-                    <bt:Image size="80" resid="Icon.80x80"/>
-                  </Icon>
-                  <Action xsi:type="ExecuteFunction">
-                    <FunctionName>action</FunctionName>
-                  </Action>
-                </Control>
               </Group>
             </OfficeTab>
           </ExtensionPoint>
         </DesktopFormFactor>
       </Host>
     </Hosts>
+
     <Resources>
       <bt:Images>
         <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
+        <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.github.io/michael/assets/icon-24.png"/>
         <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
         <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Michael"/>
         <bt:String id="TaskpaneButton.Label" DefaultValue="Pane"/>
-        <bt:String id="ActionButton.Label" DefaultValue="Command"/>
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane to summarize or translate the email."/>
-        <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/>
       </bt:LongStrings>
     </Resources>
 
@@ -156,21 +141,6 @@
                       <SupportsPinning>true</SupportsPinning>
                     </Action>
                   </Control>
-                  <Control xsi:type="Button" id="ActionButton">
-                    <Label resid="ActionButton.Label"/>
-                    <Supertip>
-                      <Title resid="ActionButton.Label"/>
-                      <Description resid="ActionButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16x16"/>
-                      <bt:Image size="32" resid="Icon.32x32"/>
-                      <bt:Image size="80" resid="Icon.80x80"/>
-                    </Icon>
-                    <Action xsi:type="ExecuteFunction">
-                      <FunctionName>action</FunctionName>
-                    </Action>
-                  </Control>
                 </Group>
               </OfficeTab>
             </ExtensionPoint>
@@ -179,22 +149,25 @@
       </Hosts>
       <Resources>
         <bt:Images>
+          <bt:Image id="Icon" DefaultValue="https://alansynn.github.io/michael/assets/icon.png"/>
           <bt:Image id="Icon.16x16" DefaultValue="https://alansynn.github.io/michael/assets/icon-16.png"/>
+          <bt:Image id="Icon.24x24" DefaultValue="https://alansynn.github.io/michael/assets/icon-24.png"/>
           <bt:Image id="Icon.32x32" DefaultValue="https://alansynn.github.io/michael/assets/icon-32.png"/>
           <bt:Image id="Icon.80x80" DefaultValue="https://alansynn.github.io/michael/assets/icon-80.png"/>
+          <bt:Image id="logo-black" DefaultValue="https://alansynn.github.io/michael/assets/michael-black.png"/>
+          <bt:Image id="logo-white" DefaultValue="https://alansynn.github.io/michael/assets/michael-white.png"/>
+          <bt:Image id="banner-black" DefaultValue="https://alansynn.github.io/michael/assets/meet-michael-black.png"/>
+          <bt:Image id="banner-white" DefaultValue="https://alansynn.github.io/michael/assets/meet-michael-white.png"/>
         </bt:Images>
         <bt:Urls>
-          <bt:Url id="Commands.Url" DefaultValue="https://alansynn.github.io/michael/commands.html"/>
           <bt:Url id="Taskpane.Url" DefaultValue="https://alansynn.github.io/michael/taskpane.html"/>
         </bt:Urls>
         <bt:ShortStrings>
           <bt:String id="GroupLabel" DefaultValue="Michael"/>
           <bt:String id="TaskpaneButton.Label" DefaultValue="Pane"/>
-          <bt:String id="ActionButton.Label" DefaultValue="Command"/>
         </bt:ShortStrings>
         <bt:LongStrings>
-          <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane to summarize or translate the email."/>
-          <bt:String id="ActionButton.Tooltip" DefaultValue="Quickly summarize the email content."/>
+          <bt:String id="TaskpaneButton.Tooltip" DefaultValue="Opens a pane to talk with Michael."/>
         </bt:LongStrings>
       </Resources>
     </VersionOverrides>

@@ -117,17 +117,32 @@ body {
 .header-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 }
 
-.brand-name {
+.brand-logo-img {
+    height: 28px;
+    width: auto;
+    vertical-align: middle;
+}
+
+.brand-name-text {
     font-size: 16px;
     font-weight: 600;
     color: var(--text-primary);
     letter-spacing: -0.3px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+.brand-name {
+    /* Remove or comment out old styles if they exist */
+    /* font-size: 16px; */
+    /* font-weight: 600; */
+    /* color: var(--text-primary); */
+    /* letter-spacing: -0.3px; */
+    /* white-space: nowrap; */
+    /* overflow: hidden; */
+    /* text-overflow: ellipsis; */
 }
 
 .header-actions {
@@ -345,43 +360,88 @@ body {
     padding-top: 16px;
 }
 
-/* Settings dropdown styles */
+/* Settings Dropdown Compact Styles */
 .settings-dropdown {
+    /* Restore Positioning & Appearance */
     position: absolute;
-    top: 50px;
-    left: 2.5vw;
-    width: 90vw;
-    max-height: 70vh;
-    overflow-y: auto;
+    top: 55px; /* Position below header */
+    left: 12px; /* Consistent padding */
+    right: 12px; /* Consistent padding */
+    z-index: 100;
     background-color: var(--background-primary);
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 100;
-    padding: 10px;
     border-radius: 5px;
-    animation: fadeInDropdown 0.2s ease-out;
-}
-
-.settings-section {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.settings-section:last-child {
-    border-bottom: none;
+    /* Existing Compact Styles */
+    padding: 12px;
+    max-height: calc(100vh - 120px); /* Max height considering header/footer/padding */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    /* Add scrolling */
+    overflow-y: auto;
 }
 
 .settings-section h3 {
     margin-top: 0;
-    margin-bottom: 10px;
-    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 1.1em;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+}
+
+.settings-dropdown-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px 15px;
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+}
+
+.settings-group label {
+    font-size: 0.9em;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.settings-group .ms-TextField-field,
+.settings-group .ms-Dropdown-select,
+.settings-group textarea.ms-TextField-field {
+    font-size: 0.95em;
+    padding: 6px 8px;
+    border-radius: 4px;
+}
+
+.settings-group textarea.ms-TextField-field {
+    min-height: 60px;
+    resize: vertical;
+}
+
+.settings-group:has(#dropdown-api-key),
+.settings-group:has(textarea) {
+    grid-column: 1 / -1;
 }
 
 .settings-actions {
-    display: flex;
-    justify-content: space-between;
     margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.settings-actions .ms-Button {
+    font-size: 0.9em;
+    padding: 5px 10px;
+}
+
+[data-theme="dark"] .settings-group label {
+    color: var(--text-secondary-dark);
 }
 
 /* Form Elements */
@@ -833,54 +893,14 @@ html[data-font-size="large"] {
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
 }
 
-/* Export markdown button styles */
-#dropdown-export-markdown {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #7b61ff;
-    color: white;
-    border-color: #7b61ff;
-}
+/* Remove Export markdown button styles */
+/* #dropdown-export-markdown { ... } */
+/* #dropdown-export-markdown:hover { ... } */
+/* [data-theme="dark"] #dropdown-export-markdown { ... } */
+/* [data-theme="dark"] #dropdown-export-markdown:hover { ... } */
 
-#dropdown-export-markdown:hover {
-    background-color: #6a52e0;
-    border-color: #6a52e0;
-}
-
-[data-theme="dark"] #dropdown-export-markdown {
-    background-color: #8a72ff;
-    color: white;
-    border-color: #8a72ff;
-}
-
-[data-theme="dark"] #dropdown-export-markdown:hover {
-    background-color: #7960f9;
-    border-color: #7960f9;
-}
-
-/* Copy Templates button styles */
-#dropdown-copy-templates {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #00b7c3;
-    color: white;
-    border-color: #00b7c3;
-}
-
-#dropdown-copy-templates:hover {
-    background-color: #009da8;
-    border-color: #009da8;
-}
-
-[data-theme="dark"] #dropdown-copy-templates {
-    background-color: #00c8d7;
-    color: white;
-    border-color: #00c8d7;
-}
-
-[data-theme="dark"] #dropdown-copy-templates:hover {
-    background-color: #00adb9;
-    border-color: #00adb9;
-}
+/* Remove Copy Templates button styles */
+/* #dropdown-copy-templates { ... } */
+/* #dropdown-copy-templates:hover { ... } */
+/* [data-theme="dark"] #dropdown-copy-templates { ... } */
+/* [data-theme="dark"] #dropdown-copy-templates:hover { ... } */
