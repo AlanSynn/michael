@@ -371,6 +371,28 @@ function applyCurrentTheme() {
       }
     }
   }
+
+  // ----- Logo Switching Logic Start -----
+  const sideloadLogo = document.getElementById('sideload-logo');
+  const landingLogo = document.getElementById('landing-logo-main');
+  const brandLogo = document.getElementById('brand-logo'); // Get new brand logo
+  const currentThemeIsDark = document.body.classList.contains('dark-theme');
+
+  // Set sideload logo (White on Dark, Black on Light)
+  if (sideloadLogo) {
+    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+  }
+
+  // Set landing page logo (White on Dark, Black on Light - Corrected)
+  if (landingLogo) {
+    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+  }
+
+  // Set brand logo (White on Dark, Black on Light)
+  if (brandLogo) {
+    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
+  }
+  // ----- Logo Switching Logic End -----
 }
 
 /**
@@ -471,6 +493,7 @@ function saveDropdownSettings() {
 
   // Update with values from dropdown form
   const apiKey = document.getElementById('dropdown-api-key').value;
+  // Get model from input field
   const model = document.getElementById('dropdown-model').value;
   const language = document.getElementById('dropdown-language').value;
   const eventTitleLanguage = document.getElementById('dropdown-event-title-language').value;
@@ -478,7 +501,8 @@ function saveDropdownSettings() {
   const fontSize = document.getElementById('dropdown-font-size').value;
   const tldrMode = document.getElementById('dropdown-tldr-mode').value;
   const showReply = document.getElementById('dropdown-show-reply').value;
-  const replyModel = document.getElementById('dropdown-reply-model').value;
+  // Get reply template
+  const replyTemplate = document.getElementById('dropdown-reply-template').value;
   const autorun = document.getElementById('dropdown-autorun').value;
   const autorunOption = document.getElementById('dropdown-autorun-option').value;
   const devMode = document.getElementById('dropdown-dev-mode').value;
@@ -489,14 +513,14 @@ function saveDropdownSettings() {
 
   // Update settings object
   settings.apiKey = apiKey;
-  settings.model = model;
+  settings.model = model; // Save model from input
   settings.defaultLanguage = language;
   settings.eventTitleLanguage = eventTitleLanguage;
   settings.theme = theme;
   settings.fontSize = fontSize;
   settings.tldrMode = tldrMode;
   settings.showReply = showReply;
-  settings.replyModel = replyModel;
+  settings.replyModel = replyTemplate;
   settings.autorun = autorun;
   settings.autorunOption = autorunOption;
   settings.devMode = devMode;
@@ -510,6 +534,8 @@ function saveDropdownSettings() {
   settings.templates.summarize = summarizeTemplate;
   settings.templates.translate = translateTemplate;
   settings.templates.translateSummarize = translateSummarizeTemplate;
+  // Save reply template
+  settings.templates.reply = replyTemplate;
 
   // Save settings
   localStorage.setItem('my_sidekick_michael_settings', JSON.stringify(settings));
@@ -553,9 +579,12 @@ function resetTemplates() {
   // Update textareas
   document.getElementById('dropdown-summarize-template').value = DEFAULT_TEMPLATES.summarize;
   document.getElementById('dropdown-translate-template').value = DEFAULT_TEMPLATES.translate;
-  // Add the new translateSummarize template to the reset function
   if (document.getElementById('dropdown-translate-summarize-template')) {
     document.getElementById('dropdown-translate-summarize-template').value = DEFAULT_TEMPLATES.translateSummarize;
+  }
+  // Update reply template textarea
+  if (document.getElementById('dropdown-reply-template')) {
+    document.getElementById('dropdown-reply-template').value = DEFAULT_TEMPLATES.reply;
   }
   showNotification('Templates reset to defaults');
 }
@@ -574,6 +603,7 @@ function loadDropdownSettings() {
 
       // Set form values
       if (settings.apiKey) document.getElementById('dropdown-api-key').value = settings.apiKey;
+      // Set model input value
       if (settings.model) document.getElementById('dropdown-model').value = settings.model;
       if (settings.defaultLanguage) document.getElementById('dropdown-language').value = settings.defaultLanguage;
       if (settings.eventTitleLanguage) document.getElementById('dropdown-event-title-language').value = settings.eventTitleLanguage;
@@ -581,10 +611,6 @@ function loadDropdownSettings() {
       if (settings.fontSize) document.getElementById('dropdown-font-size').value = settings.fontSize;
       if (settings.tldrMode) document.getElementById('dropdown-tldr-mode').value = settings.tldrMode;
       if (settings.showReply) document.getElementById('dropdown-show-reply').value = settings.showReply;
-      if (settings.replyModel) document.getElementById('dropdown-reply-model').value = settings.replyModel;
-      if (settings.autorun) document.getElementById('dropdown-autorun').value = settings.autorun;
-      if (settings.autorunOption) document.getElementById('dropdown-autorun-option').value = settings.autorunOption;
-      if (settings.devMode) document.getElementById('dropdown-dev-mode').value = settings.devMode;
       if (settings.devServer) document.getElementById('dropdown-dev-server').value = settings.devServer;
 
       // Show/hide dev server input based on dev mode
@@ -608,15 +634,14 @@ function loadDropdownSettings() {
 
       // Set templates
       if (settings.templates) {
-        if (settings.templates.summarize) {
-          document.getElementById('dropdown-summarize-template').value = settings.templates.summarize;
-        }
-        if (settings.templates.translate) {
-          document.getElementById('dropdown-translate-template').value = settings.templates.translate;
-        }
-        if (settings.templates.translateSummarize) {
-          document.getElementById('dropdown-translate-summarize-template').value = settings.templates.translateSummarize;
-        }
+        document.getElementById('dropdown-summarize-template').value = settings.templates.summarize || DEFAULT_TEMPLATES.summarize;
+        document.getElementById('dropdown-translate-template').value = settings.templates.translate || DEFAULT_TEMPLATES.translate;
+        document.getElementById('dropdown-translate-summarize-template').value = settings.templates.translateSummarize || DEFAULT_TEMPLATES.translateSummarize;
+        // Load reply template
+        document.getElementById('dropdown-reply-template').value = settings.templates.reply || DEFAULT_TEMPLATES.reply;
+      } else {
+          // If templates object doesn't exist, load defaults
+          resetTemplates();
       }
     } else {
       // No settings found, load default templates
@@ -1443,21 +1468,44 @@ async function generateReply() {
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
 
-    // Create prompt for reply generation with structured output
-    const prompt = `You are a professional email composer. Based on the following email content,
-    draft a concise, professional reply. The reply MUST include:
+    // Get reply template from storage or use default
+    let template = DEFAULT_TEMPLATES.reply;
+    try {
+        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.templates && settings.templates.reply) {
+                template = settings.templates.reply;
+            }
+        }
+    } catch (error) {
+        console.error("Error getting reply template:", error);
+    }
 
-    1. Start with "SUBJECT: " followed by an appropriate subject line, then a blank line
-    2. A professional, concise email body
+    // Get language (assuming you still want language for reply)
+    const language = getLanguage();
 
-    Make the response clear, helpful, and to the point. Use a professional tone.
+    // Replace placeholders in template
+    const prompt = template
+        .replace('{subject}', subject)
+        .replace('{content}', emailContent)
+        .replace('{language}', getLanguageText(language)); // Ensure language name is used if placeholder exists
 
-    Email content to reply to:
-    Subject: ${subject}
+    // Get reply model from settings
+    let replyModelOverride = null;
+    try {
+        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            if (settings.replyModel) {
+                replyModelOverride = settings.replyModel;
+            }
+        }
+    } catch (error) {
+        console.error("Error getting reply model:", error);
+    }
 
-    ${emailContent}`;
-
-    const result = await generateContent(prompt, apiKey);
+    const result = await generateContent(prompt, apiKey, replyModelOverride);
     let formattedReply = formatReplyOutput(result);
 
     // Display in TLDR and full content sections
@@ -2181,6 +2229,7 @@ function exportTemplatesAsMarkdown() {
         // Add model information
         markdownContent += `## General Settings\n\n`;
         markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
+        markdownContent += `- **Reply Model**: ${settings.replyModel || 'gemini-2.0-flash-lite'}\n`; // Add reply model
         markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
         markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
 
@@ -2191,21 +2240,28 @@ function exportTemplatesAsMarkdown() {
         markdownContent += `### Summarize Template\n\n\`\`\`\n${
             settings.templates && settings.templates.summarize ?
             settings.templates.summarize :
-            'No template defined'
+            DEFAULT_TEMPLATES.summarize
         }\n\`\`\`\n\n`;
 
         // Translate template
         markdownContent += `### Translate Template\n\n\`\`\`\n${
             settings.templates && settings.templates.translate ?
             settings.templates.translate :
-            'No template defined'
+            DEFAULT_TEMPLATES.translate
         }\n\`\`\`\n\n`;
 
         // Translate & Summarize template
         markdownContent += `### Translate & Summarize Template\n\n\`\`\`\n${
             settings.templates && settings.templates.translateSummarize ?
             settings.templates.translateSummarize :
-            'No template defined'
+            DEFAULT_TEMPLATES.translateSummarize
+        }\n\`\`\`\n\n`;
+
+        // Reply template
+        markdownContent += `### Reply Template\n\n\`\`\`\n${
+            settings.templates && settings.templates.reply ?
+            settings.templates.reply :
+            DEFAULT_TEMPLATES.reply
         }\n\`\`\`\n\n`;
 
         // Create download link
