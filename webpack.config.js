@@ -28,7 +28,7 @@ module.exports = async (env, options) => {
     output: {
       devtoolModuleFilenameTemplate: "webpack:///[resource-path]?[loaders]",
       clean: true,
-      publicPath: dev ? "/" : "/michael/"
+      publicPath: dev ? "/" : urlProd
     },
     resolve: {
       extensions: [".html", ".js"],
