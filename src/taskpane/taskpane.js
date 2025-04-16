@@ -6,6 +6,12 @@
 /* global document, Office */
 import { marked } from 'marked';
 
+// Import image assets
+import michaelBlackLogo from '../../assets/michael-black.png';
+import michaelWhiteLogo from '../../assets/michael-white.png';
+import meetMichaelBlackLogo from '../../assets/meet-michael-black.png';
+import meetMichaelWhiteLogo from '../../assets/meet-michael-white.png';
+
 // Safety settings for Gemini API
 const safetySettings = [{
   category: "HARM_CATEGORY_HARASSMENT",
@@ -375,22 +381,21 @@ function applyCurrentTheme() {
   // ----- Logo Switching Logic Start -----
   const sideloadLogo = document.getElementById('sideload-logo');
   const landingLogo = document.getElementById('landing-logo-main');
-  const brandLogo = document.getElementById('brand-logo'); // Get new brand logo
-  const currentThemeIsDark = document.body.classList.contains('dark-theme');
+  const brandLogo = document.getElementById('brand-logo');
 
-  // Set sideload logo (White on Dark, Black on Light)
+  // Determine correct image sources based on theme using imported variables
+  const meetMichaelSrc = document.body.classList.contains('dark-theme') ? meetMichaelWhiteLogo : meetMichaelBlackLogo;
+  const michaelSrc = document.body.classList.contains('dark-theme') ? michaelWhiteLogo : michaelBlackLogo;
+
+  // Set logo sources
   if (sideloadLogo) {
-    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    sideloadLogo.src = meetMichaelSrc;
   }
-
-  // Set landing page logo (White on Dark, Black on Light - Corrected)
   if (landingLogo) {
-    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    landingLogo.src = meetMichaelSrc;
   }
-
-  // Set brand logo (White on Dark, Black on Light)
   if (brandLogo) {
-    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
+    brandLogo.src = michaelSrc;
   }
   // ----- Logo Switching Logic End -----
 }
