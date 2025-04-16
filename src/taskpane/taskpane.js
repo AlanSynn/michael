@@ -7,6 +7,8 @@
 import { marked } from 'marked';
 
 // Import image assets
+import icon from '../../assets/icon.png';
+import iconBlack from '../../assets/icon-black.png';
 import michaelBlackLogo from '../../assets/michael-black.png';
 import michaelWhiteLogo from '../../assets/michael-white.png';
 import meetMichaelBlackLogo from '../../assets/meet-michael-black.png';
@@ -386,10 +388,11 @@ function applyCurrentTheme() {
   // Determine correct image sources based on theme using imported variables
   const meetMichaelSrc = document.body.classList.contains('dark-theme') ? meetMichaelWhiteLogo : meetMichaelBlackLogo;
   const michaelSrc = document.body.classList.contains('dark-theme') ? michaelWhiteLogo : michaelBlackLogo;
+  const iconSrc = document.body.classList.contains('dark-theme') ? icon : iconBlack;
 
   // Set logo sources
   if (sideloadLogo) {
-    sideloadLogo.src = meetMichaelSrc;
+    sideloadLogo.src = iconSrc;
   }
   if (landingLogo) {
     landingLogo.src = meetMichaelSrc;
