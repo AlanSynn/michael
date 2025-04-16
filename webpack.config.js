@@ -3,6 +3,7 @@
 const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const path = require("path");
 
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://alansynn.github.io/michael/"; // Updated to your GitHub Pages URL
@@ -26,6 +27,7 @@ module.exports = async (env, options) => {
       commands: "./src/commands/commands.js"
     },
     output: {
+      path: path.resolve(__dirname, "dist"),
       devtoolModuleFilenameTemplate: "webpack:///[resource-path]?[loaders]",
       clean: true,
       publicPath: dev ? "/" : urlProd
@@ -76,8 +78,9 @@ module.exports = async (env, options) => {
             from: "assets",
             to: "assets",
             filter: (resourcePath) => {
-              return resourcePath.endsWith(".png") || resourcePath.endsWith(".svg");
-            }
+              return resourcePath.endsWith(".svg");
+            },
+            noErrorOnMissing: true,
           },
           {
             from: "manifest*.xml",
