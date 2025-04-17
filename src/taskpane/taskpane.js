@@ -6,14 +6,6 @@
 /* global document, Office */
 import { marked } from 'marked';
 
-// Import image assets
-import icon from '../../assets/icon.png';
-import iconBlack from '../../assets/icon-black.png';
-import michaelBlackLogo from '../../assets/michael-black.png';
-import michaelWhiteLogo from '../../assets/michael-white.png';
-import meetMichaelBlackLogo from '../../assets/meet-michael-black.png';
-import meetMichaelWhiteLogo from '../../assets/meet-michael-white.png';
-
 // Safety settings for Gemini API
 const safetySettings = [{
   category: "HARM_CATEGORY_HARASSMENT",
@@ -383,22 +375,22 @@ function applyCurrentTheme() {
   // ----- Logo Switching Logic Start -----
   const sideloadLogo = document.getElementById('sideload-logo');
   const landingLogo = document.getElementById('landing-logo-main');
-  const brandLogo = document.getElementById('brand-logo');
+  const brandLogo = document.getElementById('brand-logo'); // Get new brand logo
+  const currentThemeIsDark = document.body.classList.contains('dark-theme');
 
-  // Determine correct image sources based on theme using imported variables
-  const meetMichaelSrc = document.body.classList.contains('dark-theme') ? meetMichaelWhiteLogo : meetMichaelBlackLogo;
-  const michaelSrc = document.body.classList.contains('dark-theme') ? michaelWhiteLogo : michaelBlackLogo;
-  const iconSrc = document.body.classList.contains('dark-theme') ? icon : iconBlack;
-
-  // Set logo sources
+  // Set sideload logo (White on Dark, Black on Light)
   if (sideloadLogo) {
-    sideloadLogo.src = iconSrc;
+    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
   }
+
+  // Set landing page logo (White on Dark, Black on Light - Corrected)
   if (landingLogo) {
-    landingLogo.src = meetMichaelSrc;
+    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
   }
+
+  // Set brand logo (White on Dark, Black on Light)
   if (brandLogo) {
-    brandLogo.src = michaelSrc;
+    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
   }
   // ----- Logo Switching Logic End -----
 }
