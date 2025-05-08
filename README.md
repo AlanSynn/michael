@@ -12,7 +12,7 @@ Meet Michael, your AI sidekick for Outlook! Michael enhances your email producti
 *   **Calendar Event Creation:** Automatically extract event details from email content and create calendar entries.
 *   **Customizable Settings:**
     *   Configure your Google Gemini API Key.
-    *   Select the Gemini model to use (e.g., gemini-1.5-flash, gemini-2.0-flash-lite).
+    *   Select the Gemini model to use (e.g., gemini-2.0-flash-lite).
     *   Set default translation language.
     *   Choose UI theme (Light, Dark, System Default).
     *   Adjust font size for readability.
@@ -70,4 +70,4 @@ Meet Michael, your AI sidekick for Outlook! Michael enhances your email producti
 
 ## License
 
-MIT License (or specify your chosen license)
+MIT License
