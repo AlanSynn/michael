@@ -102,6 +102,10 @@ body {
     background-color: var(--background-primary);
     color: var(--text-primary);
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* ADDED: Specific rule for body to be the main flex container */
+body {
     display: flex;
     flex-direction: column;
 }
