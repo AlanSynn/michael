@@ -381,15 +381,15 @@ body {
 .settings-view {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 48px); /* Full height minus header */
-    background-color: var(--background-secondary);
-    position: absolute; /* Or relative/static depending on desired flow */
-    top: 48px; /* Position below header */
+    /* Ensure full height using absolute positioning */
+    position: absolute;
+    top: 48px; /* Below header */
     left: 0;
     right: 0;
-    bottom: 0;
-    z-index: 50; /* Below header potentially */
-    overflow: hidden; /* Prevent whole view scrolling */
+    bottom: 0; /* Stretch to bottom */
+    background-color: var(--background-secondary);
+    z-index: 50;
+    overflow: hidden;
 }
 
 .settings-header {
@@ -446,9 +446,11 @@ body {
 }
 
 .settings-content {
-    flex-grow: 1; /* Take remaining height */
-    overflow-y: auto; /* Allow content scrolling */
+    flex-grow: 1; /* Allow flex grow */
+    overflow-y: auto; /* Allow vertical scrolling */
     padding: 20px 16px;
+    /* Explicitly set height to fill remaining space */
+    height: calc(100% - 48px - 50px); /* Approx height: 100% - header height - tabs height */
 }
 
 .settings-tab-content {
@@ -476,10 +478,12 @@ body {
 .settings-group .ms-TextField-field,
 .settings-group .ms-Dropdown-select,
 .settings-group textarea.ms-TextField-field {
-    width: 100%; /* Make inputs/selects full width */
-    max-width: 450px; /* Optional: Limit max width */
+    width: 100%;
+    /* Remove max-width to prevent horizontal clipping */
+    /* max-width: 450px; */
     font-size: 14px;
     padding: 8px 10px;
+    box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 .template-actions {
