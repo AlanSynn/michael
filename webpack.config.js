@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const urlDev = "https://localhost:3000/";
-const urlProd = "https://alansynn.github.io/michael/"; // Updated to your GitHub Pages URL
+const urlProd = "https://alansynn.github.io/michael/";
 
 const addinName = "Michael";
 const addinDevName = "Michael [Local]";

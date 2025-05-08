@@ -380,17 +380,17 @@ function applyCurrentTheme() {
 
   // Set sideload logo (White on Dark, Black on Light)
   if (sideloadLogo) {
-    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    sideloadLogo.src = currentThemeIsDark ? 'assets/meet-michael-white.png' : 'assets/meet-michael-black.png';
   }
 
   // Set landing page logo (White on Dark, Black on Light - Corrected)
   if (landingLogo) {
-    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    landingLogo.src = currentThemeIsDark ? 'assets/meet-michael-white.png' : 'assets/meet-michael-black.png';
   }
 
   // Set brand logo (White on Dark, Black on Light)
   if (brandLogo) {
-    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
+    brandLogo.src = currentThemeIsDark ? 'assets/michael-white.png' : 'assets/michael-black.png';
   }
   // ----- Logo Switching Logic End -----
 }
