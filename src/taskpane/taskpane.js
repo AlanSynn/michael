@@ -130,6 +130,71 @@ Content:
   {content}`
 };
 
+/**
+ * Toggle the visibility of the settings view and handle main content visibility.
+ */
+function toggleSettingsView() {
+  const settingsView = document.getElementById("settings-view");
+  const appBody = document.getElementById("app-body"); // Main content area
+
+  if (settingsView && appBody) {
+    const isSettingsVisible = settingsView.style.display === "block";
+    if (isSettingsVisible) {
+      settingsView.style.display = "none";
+      appBody.style.display = "flex"; // Show main content (assuming flex is default)
+    } else {
+      settingsView.style.display = "block";
+      appBody.style.display = "none"; // Hide main content
+      // Optional: Load settings when view is opened
+      loadDropdownSettings();
+      // Activate the first tab by default if needed, handled by initTabs
+    }
+  }
+}
+
+/**
+ * Initialize tab switching logic for the settings view.
+ */
+function initializeSettingsTabs() {
+    const tabButtons = document.querySelectorAll(".settings-tabs .settings-tab-button");
+    const tabContents = document.querySelectorAll(".settings-content .settings-tab-content");
+
+    if (!tabButtons.length || !tabContents.length) return;
+
+    tabButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            // Get target tab content ID from button's data attribute
+            const targetTabId = button.getAttribute("data-tab");
+
+            // Deactivate all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove("active"));
+            tabContents.forEach(content => content.classList.remove("active"));
+
+            // Activate the clicked button and corresponding content
+            button.classList.add("active");
+            const targetContent = document.getElementById(targetTabId);
+            if (targetContent) {
+                targetContent.classList.add("active");
+            } else {
+                console.error("Target tab content not found:", targetTabId);
+            }
+        });
+    });
+
+    // Ensure the first tab is active on initialization
+    const firstTabButton = tabButtons[0];
+    const firstTabContentId = firstTabButton?.getAttribute("data-tab");
+    const firstTabContent = document.getElementById(firstTabContentId);
+
+    tabButtons.forEach(btn => btn.classList.remove("active"));
+    tabContents.forEach(content => content.classList.remove("active"));
+
+    if (firstTabButton && firstTabContent) {
+        firstTabButton.classList.add("active");
+        firstTabContent.classList.add("active");
+    }
+}
+
 Office.onReady((info) => {
     if (info.host === Office.HostType.Outlook) {
         document.getElementById("sideload-msg").style.display = "none";
@@ -175,11 +240,24 @@ Office.onReady((info) => {
         document.getElementById("translate").addEventListener("click", translateEmail);
         document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
         document.getElementById("calendar-event").addEventListener("click", handleCalendarEvent);
-        document.getElementById("settings-toggle").addEventListener("click", toggleSettingsDropdown);
-        document.getElementById("dropdown-close-settings").addEventListener("click", toggleSettingsDropdown);
+        document.getElementById("settings-toggle").addEventListener("click", toggleSettingsView); // Updated listener
+        document.getElementById("close-settings-view").addEventListener("click", toggleSettingsView); // Listener for new close button
         document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
         document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
-        document.getElementById("dropdown-export-markdown").addEventListener("click", exportTemplatesAsMarkdown);
+        // Note: Template specific buttons are now inside the template tab HTML
+        const resetTemplatesBtn = document.getElementById("dropdown-reset-templates");
+        if (resetTemplatesBtn) {
+            resetTemplatesBtn.addEventListener("click", resetTemplates); // Listener for new reset templates button
+        }
+        const copyTemplatesBtn = document.getElementById("dropdown-copy-templates");
+        if (copyTemplatesBtn) {
+           // Add copy logic if needed, currently uses markdown export ID?
+           // copyTemplatesBtn.addEventListener("click", copyAllTemplatesFunction);
+        }
+        const exportMarkdownBtn = document.getElementById("dropdown-export-markdown");
+        if (exportMarkdownBtn) {
+            exportMarkdownBtn.addEventListener("click", exportTemplatesAsMarkdown);
+        }
         document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
             if (event.key === "Enter") {
                 saveDropdownSettings();
@@ -321,22 +399,11 @@ Office.onReady((info) => {
 
         // Initial calendar button state update
         updateCalendarButtonState();
+
+        // Initialize Settings Tabs
+        initializeSettingsTabs();
     }
 });
-
-/**
- * Toggle the visibility of the settings dropdown
- */
-function toggleSettingsDropdown() {
-  const dropdown = document.getElementById("settings-dropdown");
-  if (dropdown) {
-    const isVisible = dropdown.style.display === "block";
-    dropdown.style.display = isVisible ? "none" : "block";
-  }
-}
-
-// Make the function available globally
-window.toggleSettingsDropdown = toggleSettingsDropdown;
 
 /**
  * Apply the current theme based on user preference or Office theme
@@ -563,7 +630,7 @@ function saveDropdownSettings() {
   showNotification('All settings saved successfully');
 
   // Close the dropdown
-  toggleSettingsDropdown();
+  toggleSettingsView();
 }
 
 /**
@@ -579,13 +646,8 @@ function resetTemplates() {
   // Update textareas
   document.getElementById('dropdown-summarize-template').value = DEFAULT_TEMPLATES.summarize;
   document.getElementById('dropdown-translate-template').value = DEFAULT_TEMPLATES.translate;
-  if (document.getElementById('dropdown-translate-summarize-template')) {
-    document.getElementById('dropdown-translate-summarize-template').value = DEFAULT_TEMPLATES.translateSummarize;
-  }
-  // Update reply template textarea
-  if (document.getElementById('dropdown-reply-template')) {
-    document.getElementById('dropdown-reply-template').value = DEFAULT_TEMPLATES.reply;
-  }
+  document.getElementById('dropdown-translate-summarize-template').value = DEFAULT_TEMPLATES.translateSummarize;
+  document.getElementById('dropdown-reply-template').value = DEFAULT_TEMPLATES.reply;
   showNotification('Templates reset to defaults');
 }
 
@@ -810,7 +872,7 @@ async function summarizeEmail() {
 
     if (!apiKey) {
         showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsDropdown(); // Open settings dropdown to prompt for API key
+        toggleSettingsView(); // Open settings dropdown to prompt for API key
         return;
     }
 
@@ -883,7 +945,7 @@ async function translateEmail() {
 
     if (!apiKey) {
         showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsDropdown(); // Open settings dropdown to prompt for API key
+        toggleSettingsView(); // Open settings dropdown to prompt for API key
         return;
     }
 
@@ -1110,7 +1172,7 @@ async function translateAndSummarizeEmail() {
 
     if (!apiKey) {
         showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsDropdown(); // Open settings dropdown to prompt for API key
+        toggleSettingsView(); // Open settings dropdown to prompt for API key
         return;
     }
 
@@ -1457,7 +1519,7 @@ async function generateReply() {
 
   if (!apiKey) {
     showNotification("Please add your Gemini API key in the settings", 'error');
-    toggleSettingsDropdown();
+    toggleSettingsView();
     return;
   }
 
@@ -1778,7 +1840,7 @@ function resetAllSettings() {
     document.getElementById('dropdown-dev-server').value = '';
     document.getElementById('dev-server-group').style.display = 'none';
 
-    // Reset templates
+    // Reset templates (calls the function above)
     resetTemplates();
 
     // Clear API key
@@ -1801,6 +1863,9 @@ function resetAllSettings() {
     updateDevBadges(false);
 
     showNotification('All settings reset to defaults', 'success');
+
+    // Re-initialize tabs to show the first one after reset
+    initializeSettingsTabs();
 }
 
 /**
@@ -2073,7 +2138,7 @@ async function handleCalendarEvent() {
 
   if (!apiKey) {
     showNotification("Please add your API key in settings", 'error');
-    toggleSettingsDropdown();
+    toggleSettingsView();
     return;
   }
 

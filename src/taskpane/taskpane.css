@@ -360,89 +360,171 @@ body {
     padding-top: 16px;
 }
 
-/* Settings Dropdown Compact Styles */
+/* Remove or modify old Settings Dropdown styles */
 .settings-dropdown {
-    /* Restore Positioning & Appearance */
-    position: absolute;
-    top: 55px; /* Position below header */
-    left: 12px; /* Consistent padding */
-    right: 12px; /* Consistent padding */
-    z-index: 100;
-    background-color: var(--background-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    /* Reduced Padding */
-    padding: 10px 8px;
-    max-height: calc(100vh - 120px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
-}
-
-.settings-section h3 {
-    margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 1.1em;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 6px;
+    /* Remove all styles or comment out */
+    /* position: absolute; ... etc */
+    display: none !important; /* Ensure it's hidden */
 }
 
 .settings-dropdown-container {
-    display: grid;
-    /* Reduced minmax width */
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    /* Reduced column gap */
-    gap: 10px 10px;
+     /* Remove grid styles */
+    /* display: grid; ... etc */
 }
 
-.settings-group {
+.settings-actions {
+     /* Remove old action styles if they are specific to the dropdown */
+     /* display: flex; ... etc */
+}
+
+/* New Settings View Styles */
+.settings-view {
     display: flex;
     flex-direction: column;
-    margin-bottom: 0;
+    height: calc(100vh - 48px); /* Full height minus header */
+    background-color: var(--background-secondary);
+    position: absolute; /* Or relative/static depending on desired flow */
+    top: 48px; /* Position below header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50; /* Below header potentially */
+    overflow: hidden; /* Prevent whole view scrolling */
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--background-primary);
+}
+
+.settings-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.settings-header #close-settings-view {
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--text-primary);
+    padding: 4px;
+}
+
+.settings-tabs {
+    display: flex;
+    background-color: var(--background-primary);
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-tab-button {
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px; /* Align border with container border */
+}
+
+.settings-tab-button.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
+    font-weight: 600;
+}
+
+.settings-tab-button:hover:not(.active) {
+    color: var(--text-primary);
+}
+
+.settings-content {
+    flex-grow: 1; /* Take remaining height */
+    overflow-y: auto; /* Allow content scrolling */
+    padding: 20px 16px;
+}
+
+.settings-tab-content {
+    display: none; /* Hide inactive tabs */
+}
+
+.settings-tab-content.active {
+    display: block; /* Show active tab */
+}
+
+/* Single column layout for settings groups */
+.settings-content .settings-group {
+    margin-bottom: 18px; /* Spacing between settings */
+    /* Removed grid-column span from previous CSS */
 }
 
 .settings-group label {
-    font-size: 0.9em;
-    margin-bottom: 4px;
-    color: var(--text-secondary);
-    font-weight: 500;
+    display: block; /* Ensure label is on its own line */
+    margin-bottom: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .settings-group .ms-TextField-field,
 .settings-group .ms-Dropdown-select,
 .settings-group textarea.ms-TextField-field {
-    font-size: 0.95em;
-    padding: 6px 8px;
-    border-radius: 4px;
+    width: 100%; /* Make inputs/selects full width */
+    max-width: 450px; /* Optional: Limit max width */
+    font-size: 14px;
+    padding: 8px 10px;
 }
 
-.settings-group textarea.ms-TextField-field {
-    min-height: 60px;
-    resize: vertical;
-}
-
-.settings-group:has(#dropdown-api-key),
-.settings-group:has(textarea) {
-    grid-column: 1 / -1;
-}
-
-.settings-actions {
-    margin-top: 15px;
-    padding-top: 10px;
+.template-actions {
+    margin-top: 20px;
+    padding-top: 15px;
     border-top: 1px solid var(--border-color);
     display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
+    gap: 10px;
 }
 
-.settings-actions .ms-Button {
-    font-size: 0.9em;
-    padding: 5px 10px;
+.settings-footer-actions {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--background-primary);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Update dark theme specific styles if needed */
+[data-theme="dark"] .settings-view {
+    background-color: var(--background-secondary);
+}
+
+[data-theme="dark"] .settings-header {
+    background-color: var(--background-primary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .settings-tabs {
+     background-color: var(--background-primary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .settings-tab-button {
+     color: var(--text-secondary);
+}
+
+[data-theme="dark"] .settings-tab-button.active {
+    color: var(--accent-color);
+    border-bottom-color: var(--accent-color);
 }
 
 [data-theme="dark"] .settings-group label {
-    color: var(--text-secondary-dark);
+    color: var(--text-primary);
 }
 
 /* Form Elements */
