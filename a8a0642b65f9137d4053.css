@@ -389,7 +389,7 @@ body {
     bottom: 0; /* Stretch to bottom */
     background-color: var(--background-secondary);
     z-index: 50;
-    overflow: hidden;
+    /* overflow: hidden; Removed to allow content to determine scroll */
 }
 
 .settings-header {
@@ -421,6 +421,7 @@ body {
     background-color: var(--background-primary);
     padding: 0 16px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent tabs from shrinking */
 }
 
 .settings-tab-button {
@@ -450,7 +451,7 @@ body {
     overflow-y: auto; /* Allow vertical scrolling */
     padding: 20px 16px;
     /* Explicitly set height to fill remaining space */
-    height: calc(100% - 48px - 50px); /* Approx height: 100% - header height - tabs height */
+    /* height: calc(100% - 48px - 50px); Removed to let flexbox manage height */
 }
 
 .settings-tab-content {
@@ -501,6 +502,7 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    flex-shrink: 0; /* Prevent footer from shrinking */
 }
 
 /* Update dark theme specific styles if needed */
