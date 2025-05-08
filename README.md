@@ -1,4 +1,6 @@
-# My Sidekick, Michael - Outlook Add-in
+<div align="center">
+  <img src="assets/meet-michael-black.png" alt="Meet Michael Logo" width="300"/>
+</div>
 
 Meet Michael, your AI sidekick for Outlook! Michael enhances your email productivity by leveraging the power of Google's Gemini AI. It allows you to quickly summarize, translate, and understand your emails directly within Outlook.
 
