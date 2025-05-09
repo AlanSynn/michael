@@ -4,25 +4,28 @@
  */
 
 /* global document, Office */
-import { marked } from 'marked';
+import {
+  marked
+} from 'marked';
 
 // Safety settings for Gemini API
 const safetySettings = [{
-  category: "HARM_CATEGORY_HARASSMENT",
-  threshold: "BLOCK_NONE"
-},
-{
-  category: "HARM_CATEGORY_HATE_SPEECH",
-  threshold: "BLOCK_NONE"
-},
-{
-  category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-  threshold: "BLOCK_NONE"
-},
-{
-  category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-  threshold: "BLOCK_NONE"
-}];
+    category: "HARM_CATEGORY_HARASSMENT",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_HATE_SPEECH",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+    threshold: "BLOCK_NONE"
+  },
+  {
+    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+    threshold: "BLOCK_NONE"
+  }
+];
 
 const TYPES = {
   SUMMARIZE: 0,
@@ -156,253 +159,253 @@ function toggleSettingsView() {
  * Initialize tab switching logic for the settings view.
  */
 function initializeSettingsTabs() {
-    const tabButtons = document.querySelectorAll(".settings-tabs .settings-tab-button");
-    const tabContents = document.querySelectorAll(".settings-content .settings-tab-content");
+  const tabButtons = document.querySelectorAll(".settings-tabs .settings-tab-button");
+  const tabContents = document.querySelectorAll(".settings-content .settings-tab-content");
 
-    if (!tabButtons.length || !tabContents.length) return;
+  if (!tabButtons.length || !tabContents.length) return;
 
-    tabButtons.forEach(button => {
-        button.addEventListener("click", () => {
-            // Get target tab content ID from button's data attribute
-            const targetTabId = button.getAttribute("data-tab");
+  tabButtons.forEach(button => {
+    button.addEventListener("click", () => {
+      // Get target tab content ID from button's data attribute
+      const targetTabId = button.getAttribute("data-tab");
 
-            // Deactivate all buttons and contents
-            tabButtons.forEach(btn => btn.classList.remove("active"));
-            tabContents.forEach(content => content.classList.remove("active"));
+      // Deactivate all buttons and contents
+      tabButtons.forEach(btn => btn.classList.remove("active"));
+      tabContents.forEach(content => content.classList.remove("active"));
 
-            // Activate the clicked button and corresponding content
-            button.classList.add("active");
-            const targetContent = document.getElementById(targetTabId);
-            if (targetContent) {
-                targetContent.classList.add("active");
-            } else {
-                console.error("Target tab content not found:", targetTabId);
-            }
-        });
+      // Activate the clicked button and corresponding content
+      button.classList.add("active");
+      const targetContent = document.getElementById(targetTabId);
+      if (targetContent) {
+        targetContent.classList.add("active");
+      } else {
+        console.error("Target tab content not found:", targetTabId);
+      }
     });
+  });
 
-    // Ensure the first tab is active on initialization
-    const firstTabButton = tabButtons[0];
-    const firstTabContentId = firstTabButton?.getAttribute("data-tab");
-    const firstTabContent = document.getElementById(firstTabContentId);
+  // Ensure the first tab is active on initialization
+  const firstTabButton = tabButtons[0];
+  const firstTabContentId = firstTabButton ? .getAttribute("data-tab");
+  const firstTabContent = document.getElementById(firstTabContentId);
 
-    tabButtons.forEach(btn => btn.classList.remove("active"));
-    tabContents.forEach(content => content.classList.remove("active"));
+  tabButtons.forEach(btn => btn.classList.remove("active"));
+  tabContents.forEach(content => content.classList.remove("active"));
 
-    if (firstTabButton && firstTabContent) {
-        firstTabButton.classList.add("active");
-        firstTabContent.classList.add("active");
-    }
+  if (firstTabButton && firstTabContent) {
+    firstTabButton.classList.add("active");
+    firstTabContent.classList.add("active");
+  }
 }
 
 Office.onReady((info) => {
-    if (info.host === Office.HostType.Outlook) {
-        document.getElementById("sideload-msg").style.display = "none";
-        document.getElementById("app-body").style.display = "flex";
+  if (info.host === Office.HostType.Outlook) {
+    document.getElementById("sideload-msg").style.display = "none";
+    document.getElementById("app-body").style.display = "flex";
 
-        // Initialize the application
-        initializeApp();
+    // Initialize the application
+    initializeApp();
 
+    // Check if autorun is enabled and get the selected option
+    let autorunEnabled = false;
+    let selectedOption = null;
+    try {
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        autorunEnabled = settings.autorun === 'true';
+        selectedOption = settings.autorunOption;
+      }
+    } catch (error) {
+      console.error('Error getting autorun settings:', error);
+    }
+
+    // If autorun is enabled and an option is selected, execute it
+    if (autorunEnabled && selectedOption) {
+      switch (selectedOption) {
+        case 'summarize':
+          summarizeEmail();
+          break;
+        case 'translate':
+          translateEmail();
+          break;
+        case 'translateAndSummarize':
+          translateAndSummarizeEmail();
+          break;
+        case 'reply':
+          generateReply();
+          break;
+      }
+    }
+
+    // Add event listeners for the application buttons
+    document.getElementById("summarize").addEventListener("click", summarizeEmail);
+    document.getElementById("translate").addEventListener("click", translateEmail);
+    document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
+    document.getElementById("calendar-event").addEventListener("click", handleCalendarEvent);
+    document.getElementById("settings-toggle").addEventListener("click", toggleSettingsView); // Updated listener
+    document.getElementById("close-settings-view").addEventListener("click", toggleSettingsView); // Listener for new close button
+    document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
+    document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
+    // Note: Template specific buttons are now inside the template tab HTML
+    const resetTemplatesBtn = document.getElementById("dropdown-reset-templates");
+    if (resetTemplatesBtn) {
+      resetTemplatesBtn.addEventListener("click", resetTemplates); // Listener for new reset templates button
+    }
+    const copyTemplatesBtn = document.getElementById("dropdown-copy-templates");
+    if (copyTemplatesBtn) {
+      // Add copy logic if needed, currently uses markdown export ID?
+      // copyTemplatesBtn.addEventListener("click", copyAllTemplatesFunction);
+    }
+    const exportMarkdownBtn = document.getElementById("dropdown-export-markdown");
+    if (exportMarkdownBtn) {
+      exportMarkdownBtn.addEventListener("click", exportTemplatesAsMarkdown);
+    }
+    document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        saveDropdownSettings();
+      }
+    });
+
+    // Add dev mode toggle listener
+    document.getElementById("dropdown-dev-mode").addEventListener("change", function () {
+      const devServerGroup = document.getElementById("dev-server-group");
+      devServerGroup.style.display = this.value === "true" ? "block" : "none";
+    });
+
+    // Settings selection change listeners
+    document.querySelectorAll(".settings-dropdown-container select").forEach(select => {
+      select.addEventListener("change", saveDropdownSettings);
+    });
+
+    // Expand button listener
+    document.getElementById("expand-content").addEventListener("click", expandContent);
+
+    // Copy buttons listeners
+    document.getElementById("copy-result").addEventListener("click", copyResult);
+    document.getElementById("generate-reply").addEventListener("click", generateReply);
+
+    // Load saved settings if any
+    loadDropdownSettings();
+
+    // Apply current theme
+    applyCurrentTheme();
+
+    // Register for theme change events
+    if (Office.context.mailbox.addHandlerAsync) {
+      Office.context.mailbox.addHandlerAsync(
+        Office.EventType.SettingsChanged,
+        onSettingsChanged
+      );
+    }
+
+    // Add event handler for email selection
+    Office.context.mailbox.addHandlerAsync(
+      Office.EventType.ItemChanged,
+      function (args) {
         // Check if autorun is enabled and get the selected option
         let autorunEnabled = false;
         let selectedOption = null;
         try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                autorunEnabled = settings.autorun === 'true';
-                selectedOption = settings.autorunOption;
-            }
+          const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+          if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            autorunEnabled = settings.autorun === 'true';
+            selectedOption = settings.autorunOption;
+          }
         } catch (error) {
-            console.error('Error getting autorun settings:', error);
+          console.error('Error getting autorun settings:', error);
         }
 
         // If autorun is enabled and an option is selected, execute it
         if (autorunEnabled && selectedOption) {
-            switch (selectedOption) {
-                case 'summarize':
+          switch (selectedOption) {
+            case 'summarize':
+              summarizeEmail();
+              break;
+            case 'translate':
+              translateEmail();
+              break;
+            case 'translateAndSummarize':
+              translateAndSummarizeEmail();
+              break;
+            case 'reply':
+              generateReply();
+              break;
+          }
+        }
+      },
+      function (result) {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          result.value.addHandlerAsync(
+            Office.EventType.ItemChanged,
+            function (args) {
+              // Check if autorun is enabled and get the selected option
+              let autorunEnabled = false;
+              let selectedOption = null;
+              try {
+                const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+                if (savedSettings) {
+                  const settings = JSON.parse(savedSettings);
+                  autorunEnabled = settings.autorun === 'true';
+                  selectedOption = settings.autorunOption;
+                }
+              } catch (error) {
+                console.error('Error getting autorun settings:', error);
+              }
+
+              // If autorun is enabled and an option is selected, execute it
+              if (autorunEnabled && selectedOption) {
+                switch (selectedOption) {
+                  case 'summarize':
                     summarizeEmail();
                     break;
-                case 'translate':
+                  case 'translate':
                     translateEmail();
                     break;
-                case 'translateAndSummarize':
+                  case 'translateAndSummarize':
                     translateAndSummarizeEmail();
                     break;
-                case 'reply':
+                  case 'reply':
                     generateReply();
                     break;
-            }
-        }
-
-        // Add event listeners for the application buttons
-        document.getElementById("summarize").addEventListener("click", summarizeEmail);
-        document.getElementById("translate").addEventListener("click", translateEmail);
-        document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
-        document.getElementById("calendar-event").addEventListener("click", handleCalendarEvent);
-        document.getElementById("settings-toggle").addEventListener("click", toggleSettingsView); // Updated listener
-        document.getElementById("close-settings-view").addEventListener("click", toggleSettingsView); // Listener for new close button
-        document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
-        document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
-        // Note: Template specific buttons are now inside the template tab HTML
-        const resetTemplatesBtn = document.getElementById("dropdown-reset-templates");
-        if (resetTemplatesBtn) {
-            resetTemplatesBtn.addEventListener("click", resetTemplates); // Listener for new reset templates button
-        }
-        const copyTemplatesBtn = document.getElementById("dropdown-copy-templates");
-        if (copyTemplatesBtn) {
-           // Add copy logic if needed, currently uses markdown export ID?
-           // copyTemplatesBtn.addEventListener("click", copyAllTemplatesFunction);
-        }
-        const exportMarkdownBtn = document.getElementById("dropdown-export-markdown");
-        if (exportMarkdownBtn) {
-            exportMarkdownBtn.addEventListener("click", exportTemplatesAsMarkdown);
-        }
-        document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
-            if (event.key === "Enter") {
-                saveDropdownSettings();
-            }
-        });
-
-        // Add dev mode toggle listener
-        document.getElementById("dropdown-dev-mode").addEventListener("change", function() {
-            const devServerGroup = document.getElementById("dev-server-group");
-            devServerGroup.style.display = this.value === "true" ? "block" : "none";
-        });
-
-        // Settings selection change listeners
-        document.querySelectorAll(".settings-dropdown-container select").forEach(select => {
-            select.addEventListener("change", saveDropdownSettings);
-        });
-
-        // Expand button listener
-        document.getElementById("expand-content").addEventListener("click", expandContent);
-
-        // Copy buttons listeners
-        document.getElementById("copy-result").addEventListener("click", copyResult);
-        document.getElementById("generate-reply").addEventListener("click", generateReply);
-
-        // Load saved settings if any
-        loadDropdownSettings();
-
-        // Apply current theme
-        applyCurrentTheme();
-
-        // Register for theme change events
-        if (Office.context.mailbox.addHandlerAsync) {
-            Office.context.mailbox.addHandlerAsync(
-                Office.EventType.SettingsChanged,
-                onSettingsChanged
-            );
-        }
-
-        // Add event handler for email selection
-        Office.context.mailbox.addHandlerAsync(
-            Office.EventType.ItemChanged,
-            function (args) {
-                // Check if autorun is enabled and get the selected option
-                let autorunEnabled = false;
-                let selectedOption = null;
-                try {
-                    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-                    if (savedSettings) {
-                        const settings = JSON.parse(savedSettings);
-                        autorunEnabled = settings.autorun === 'true';
-                        selectedOption = settings.autorunOption;
-                    }
-                } catch (error) {
-                    console.error('Error getting autorun settings:', error);
                 }
-
-                // If autorun is enabled and an option is selected, execute it
-                if (autorunEnabled && selectedOption) {
-                    switch (selectedOption) {
-                        case 'summarize':
-                            summarizeEmail();
-                            break;
-                        case 'translate':
-                            translateEmail();
-                            break;
-                        case 'translateAndSummarize':
-                            translateAndSummarizeEmail();
-                            break;
-                        case 'reply':
-                            generateReply();
-                            break;
-                    }
-                }
+              }
             },
             function (result) {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    result.value.addHandlerAsync(
-                        Office.EventType.ItemChanged,
-                        function (args) {
-                            // Check if autorun is enabled and get the selected option
-                            let autorunEnabled = false;
-                            let selectedOption = null;
-                            try {
-                                const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-                                if (savedSettings) {
-                                    const settings = JSON.parse(savedSettings);
-                                    autorunEnabled = settings.autorun === 'true';
-                                    selectedOption = settings.autorunOption;
-                                }
-                            } catch (error) {
-                                console.error('Error getting autorun settings:', error);
-                            }
-
-                            // If autorun is enabled and an option is selected, execute it
-                            if (autorunEnabled && selectedOption) {
-                                switch (selectedOption) {
-                                    case 'summarize':
-                                        summarizeEmail();
-                                        break;
-                                    case 'translate':
-                                        translateEmail();
-                                        break;
-                                    case 'translateAndSummarize':
-                                        translateAndSummarizeEmail();
-                                        break;
-                                    case 'reply':
-                                        generateReply();
-                                        break;
-                                }
-                            }
-                        },
-                        function (result) {
-                            if (result.status === Office.AsyncResultStatus.Succeeded) {
-                                result.value.register();
-                            }
-                        }
-                    );
-                }
+              if (result.status === Office.AsyncResultStatus.Succeeded) {
+                result.value.register();
+              }
             }
-        );
+          );
+        }
+      }
+    );
 
-        // Update calendar button state when email changes
-        Office.context.mailbox.addHandlerAsync(
-            Office.EventType.ItemChanged,
-            function (args) {
-                updateCalendarButtonState();
-            },
-            function (result) {
-                if (result.status === Office.AsyncResultStatus.Succeeded) {
-                    result.value.addHandlerAsync(
-                        Office.EventType.ItemChanged,
-                        function (args) {
-                            updateCalendarButtonState();
-                        }
-                    );
-                }
-            }
-        );
-
-        // Initial calendar button state update
+    // Update calendar button state when email changes
+    Office.context.mailbox.addHandlerAsync(
+      Office.EventType.ItemChanged,
+      function (args) {
         updateCalendarButtonState();
+      },
+      function (result) {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          result.value.addHandlerAsync(
+            Office.EventType.ItemChanged,
+            function (args) {
+              updateCalendarButtonState();
+            }
+          );
+        }
+      }
+    );
 
-        // Initialize Settings Tabs
-        initializeSettingsTabs();
-    }
+    // Initial calendar button state update
+    updateCalendarButtonState();
+
+    // Initialize Settings Tabs
+    initializeSettingsTabs();
+  }
 });
 
 /**
@@ -702,8 +705,8 @@ function loadDropdownSettings() {
         // Load reply template
         document.getElementById('dropdown-reply-template').value = settings.templates.reply || DEFAULT_TEMPLATES.reply;
       } else {
-          // If templates object doesn't exist, load defaults
-          resetTemplates();
+        // If templates object doesn't exist, load defaults
+        resetTemplates();
       }
     } else {
       // No settings found, load default templates
@@ -744,87 +747,83 @@ async function getEmailContent() {
 
 // Generate content using Gemini API
 async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
-    // Get model from settings or use default
-    let model = "gemini-2.0-flash-light"; // Default model
+  // Get model from settings or use default
+  let model = "gemini-2.0-flash-light";
 
-    if (modelOverride) {
-        model = modelOverride;
-    } else {
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.model) {
-                    model = settings.model;
-                }
-            }
-        } catch (error) {
-            console.error("Error getting model from settings:", error);
-        }
-    }
-
-    // API URL with selected model
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
+  if (modelOverride) {
+    model = modelOverride;
+  } else {
     try {
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [
-                            {
-                                text: prompt
-                            }
-                        ]
-                    }
-                ],
-                generationConfig: {
-                    temperature: 0.4,
-                    topK: 32,
-                    topP: 0.95,
-                    maxOutputTokens: isTldr ? 800 : 8192, // Limit tokens for TL;DR
-                },
-                safetySettings: safetySettings
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error?.message || 'Error generating content');
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.model) {
+          model = settings.model;
         }
-
-        if (!data.candidates || data.candidates.length === 0) {
-            throw new Error('No content generated');
-        }
-
-        // Extract the generated text
-        const generatedText = data.candidates[0].content.parts[0].text;
-        return generatedText;
+      }
     } catch (error) {
-        console.error('Error generating content:', error);
-        throw error;
-    } finally {
-        // Hide loading spinner only if this is not a TL;DR request
-        if (!isTldr) {
-            document.getElementById("loading").style.display = "none";
-        }
+      console.error("Error getting model from settings:", error);
     }
+  }
+
+  // API URL with selected model
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 0.95,
+          maxOutputTokens: isTldr ? 800 : 8192, // Limit tokens for TL;DR
+        },
+        safetySettings: safetySettings
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error ? .message || 'Error generating content');
+    }
+
+    if (!data.candidates || data.candidates.length === 0) {
+      throw new Error('No content generated');
+    }
+
+    // Extract the generated text
+    const generatedText = data.candidates[0].content.parts[0].text;
+    return generatedText;
+  } catch (error) {
+    console.error('Error generating content:', error);
+    throw error;
+  } finally {
+    // Hide loading spinner only if this is not a TL;DR request
+    if (!isTldr) {
+      document.getElementById("loading").style.display = "none";
+    }
+  }
 }
 
 // Generate TL;DR content
-async function generateTldrContent(prompt, apiKey, language = "Korean",modelOverride = null) {
+async function generateTldrContent(prompt, apiKey, language = "Korean", modelOverride = null) {
   const subject = Office.context.mailbox.item.subject;
   const emailContent = await getEmailContent();
 
   const tldrPrompt = DEFAULT_TEMPLATES.tldrPrompt
-      .replace('{subject}', subject)
-      .replace('{content}', emailContent)
-      .replace('{language}', language);
+    .replace('{subject}', subject)
+    .replace('{content}', emailContent)
+    .replace('{language}', language);
 
   const content = await generateContent(tldrPrompt, apiKey, modelOverride, true);
   return content;
@@ -833,14 +832,22 @@ async function generateTldrContent(prompt, apiKey, language = "Korean",modelOver
 // Get language display text
 function getLanguageText(languageCode) {
   switch (languageCode) {
-    case "es": return "Spanish";
-    case "fr": return "French";
-    case "de": return "German";
-    case "it": return "Italian";
-    case "ja": return "Japanese";
-    case "ko": return "Korean";
-    case "zh_cn": return "Chinese";
-    default: return "English";
+    case "es":
+      return "Spanish";
+    case "fr":
+      return "French";
+    case "de":
+      return "German";
+    case "it":
+      return "Italian";
+    case "ja":
+      return "Japanese";
+    case "ko":
+      return "Korean";
+    case "zh_cn":
+      return "Chinese";
+    default:
+      return "English";
   }
 }
 
@@ -868,147 +875,147 @@ function getLanguage() {
 
 // Summarize email
 async function summarizeEmail() {
-    const apiKey = getApiKey();
+  const apiKey = getApiKey();
 
-    if (!apiKey) {
-        showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsView(); // Open settings dropdown to prompt for API key
-        return;
-    }
+  if (!apiKey) {
+    showNotification("Please add your Gemini API key in the settings", 'error');
+    toggleSettingsView(); // Open settings dropdown to prompt for API key
+    return;
+  }
 
-    // Show loading UI
-    showLoading("Summarizing email...");
+  // Show loading UI
+  showLoading("Summarizing email...");
 
+  try {
+    const emailContent = await getEmailContent();
+    const subject = Office.context.mailbox.item.subject;
+
+    // Get template from storage or use default
+    let template = DEFAULT_TEMPLATES.summarize;
     try {
-        const emailContent = await getEmailContent();
-        const subject = Office.context.mailbox.item.subject;
-
-        // Get template from storage or use default
-        let template = DEFAULT_TEMPLATES.summarize;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.templates && settings.templates.summarize) {
-                    template = settings.templates.summarize;
-                }
-            }
-        } catch (error) {
-            console.error("Error getting template:", error);
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.templates && settings.templates.summarize) {
+          template = settings.templates.summarize;
         }
-
-        // Replace placeholders in template
-        const prompt = template
-            .replace('{subject}', subject)
-            .replace('{content}', emailContent);
-
-        // Check for TL;DR mode
-        let tldrMode = true;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.tldrMode) {
-                    tldrMode = settings.tldrMode === 'true';
-                }
-            }
-        } catch (error) {
-            console.error('Error getting TLDR mode setting:', error);
-        }
-
-        if (tldrMode) {
-            // Generate TL;DR first
-            const tldrContent = await generateTldrContent(prompt, apiKey, "English");
-            hideLoading();
-            showResults(tldrContent, TYPES.SUMMARIZE);
-
-            // Then generate full content in the background
-            const fullContent = await generateContent(prompt, apiKey);
-
-            // display notification of full content
-            updateResults(fullContent);
-            updateExpandButton(true);
-        } else {
-            // Generate full content only
-            const summary = await generateContent(prompt, apiKey);
-            showResults(summary, TYPES.SUMMARIZE);
-        }
+      }
     } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
+      console.error("Error getting template:", error);
     }
+
+    // Replace placeholders in template
+    const prompt = template
+      .replace('{subject}', subject)
+      .replace('{content}', emailContent);
+
+    // Check for TL;DR mode
+    let tldrMode = true;
+    try {
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.tldrMode) {
+          tldrMode = settings.tldrMode === 'true';
+        }
+      }
+    } catch (error) {
+      console.error('Error getting TLDR mode setting:', error);
+    }
+
+    if (tldrMode) {
+      // Generate TL;DR first
+      const tldrContent = await generateTldrContent(prompt, apiKey, "English");
+      hideLoading();
+      showResults(tldrContent, TYPES.SUMMARIZE);
+
+      // Then generate full content in the background
+      const fullContent = await generateContent(prompt, apiKey);
+
+      // display notification of full content
+      updateResults(fullContent);
+      updateExpandButton(true);
+    } else {
+      // Generate full content only
+      const summary = await generateContent(prompt, apiKey);
+      showResults(summary, TYPES.SUMMARIZE);
+    }
+  } catch (error) {
+    showNotification(`Error: ${error.message}`, 'error');
+  }
 }
 
 // Translate email
 async function translateEmail() {
-    const apiKey = getApiKey();
-    const language = getLanguage();
+  const apiKey = getApiKey();
+  const language = getLanguage();
 
-    if (!apiKey) {
-        showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsView(); // Open settings dropdown to prompt for API key
-        return;
-    }
+  if (!apiKey) {
+    showNotification("Please add your Gemini API key in the settings", 'error');
+    toggleSettingsView(); // Open settings dropdown to prompt for API key
+    return;
+  }
 
-    // Show loading UI
-    showLoading("Translating to " + getLanguageText(language) + "...");
+  // Show loading UI
+  showLoading("Translating to " + getLanguageText(language) + "...");
 
+  try {
+    const emailContent = await getEmailContent();
+    const subject = Office.context.mailbox.item.subject;
+
+    // Get template from storage or use default
+    let template = DEFAULT_TEMPLATES.translate;
     try {
-        const emailContent = await getEmailContent();
-        const subject = Office.context.mailbox.item.subject;
-
-        // Get template from storage or use default
-        let template = DEFAULT_TEMPLATES.translate;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.templates && settings.templates.translate) {
-                    template = settings.templates.translate;
-                }
-            }
-        } catch (error) {
-            console.error("Error getting template:", error);
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.templates && settings.templates.translate) {
+          template = settings.templates.translate;
         }
-
-        // Replace placeholders in template
-        const prompt = template
-            .replace('{subject}', subject)
-            .replace('{content}', emailContent);
-
-        // Check for TL;DR mode
-        let tldrMode = true;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.tldrMode) {
-                    tldrMode = settings.tldrMode === 'true';
-                }
-            }
-        } catch (error) {
-            console.error('Error getting TLDR mode setting:', error);
-        }
-
-        if (tldrMode) {
-            // Generate TL;DR first
-            const tldrContent = await generateTldrContent(prompt, apiKey, language);
-            hideLoading();
-            showResults(tldrContent, TYPES.TRANSLATE);
-
-            // Then generate full content in the background
-            const fullContent = await generateContent(prompt, apiKey);
-
-            // display notification of full content
-            updateResults(fullContent);
-            updateExpandButton(true);
-        } else {
-            // Generate full content only
-            const translation = await generateContent(prompt, apiKey, language);
-            showResults(translation, TYPES.TRANSLATE);
-        }
+      }
     } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
+      console.error("Error getting template:", error);
     }
+
+    // Replace placeholders in template
+    const prompt = template
+      .replace('{subject}', subject)
+      .replace('{content}', emailContent);
+
+    // Check for TL;DR mode
+    let tldrMode = true;
+    try {
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.tldrMode) {
+          tldrMode = settings.tldrMode === 'true';
+        }
+      }
+    } catch (error) {
+      console.error('Error getting TLDR mode setting:', error);
+    }
+
+    if (tldrMode) {
+      // Generate TL;DR first
+      const tldrContent = await generateTldrContent(prompt, apiKey, language);
+      hideLoading();
+      showResults(tldrContent, TYPES.TRANSLATE);
+
+      // Then generate full content in the background
+      const fullContent = await generateContent(prompt, apiKey);
+
+      // display notification of full content
+      updateResults(fullContent);
+      updateExpandButton(true);
+    } else {
+      // Generate full content only
+      const translation = await generateContent(prompt, apiKey, language);
+      showResults(translation, TYPES.TRANSLATE);
+    }
+  } catch (error) {
+    showNotification(`Error: ${error.message}`, 'error');
+  }
 }
 
 /**
@@ -1106,13 +1113,13 @@ function markdownToHtml(markdown) {
 
   // Get font size values
   const fontSizeValue = fontSize === 'small' ? '13px' :
-                        fontSize === 'large' ? '18px' : '16px';
+    fontSize === 'large' ? '18px' : '16px';
 
   const lineHeightValue = fontSize === 'small' ? '1.5' :
-                           fontSize === 'large' ? '1.7' : '1.6';
+    fontSize === 'large' ? '1.7' : '1.6';
 
   const codeFontSize = fontSize === 'small' ? '13px' :
-                        fontSize === 'large' ? '17px' : '15px';
+    fontSize === 'large' ? '17px' : '15px';
 
   // Check if this is a reply format (starts with # Re: or similar)
   const isReply = /^#\s+(?:Re:|Subject:|\[Reply\]|Response:)/i.test(markdown);
@@ -1120,7 +1127,7 @@ function markdownToHtml(markdown) {
   // Simple markdown to HTML conversion
   let html = markdown
     // Handle reply format headings specially
-    .replace(/^#\s+(.*$)/gim, function(match, p1) {
+    .replace(/^#\s+(.*$)/gim, function (match, p1) {
       if (isReply) {
         return `<h1 class="reply-heading">${p1}</h1>`;
       } else {
@@ -1168,244 +1175,244 @@ function markdownToHtml(markdown) {
 
 // Translate and Summarize email
 async function translateAndSummarizeEmail() {
-    const apiKey = getApiKey();
+  const apiKey = getApiKey();
 
-    if (!apiKey) {
-        showNotification("Please add your Gemini API key in the settings", 'error');
-        toggleSettingsView(); // Open settings dropdown to prompt for API key
-        return;
-    }
+  if (!apiKey) {
+    showNotification("Please add your Gemini API key in the settings", 'error');
+    toggleSettingsView(); // Open settings dropdown to prompt for API key
+    return;
+  }
 
-    // Show loading UI
-    showLoading("Translating and summarizing...");
+  // Show loading UI
+  showLoading("Translating and summarizing...");
 
+  try {
+    const emailContent = await getEmailContent();
+    const subject = Office.context.mailbox.item.subject;
+    let language = "English";
+
+    // Get template from storage or use default
+    let template = DEFAULT_TEMPLATES.translateSummarize;
     try {
-        const emailContent = await getEmailContent();
-        const subject = Office.context.mailbox.item.subject;
-        let language = "English";
-
-        // Get template from storage or use default
-        let template = DEFAULT_TEMPLATES.translateSummarize;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.templates && settings.templates.translateSummarize) {
-                    template = settings.templates.translateSummarize;
-                }
-                if (settings.language) {
-                    language = settings.language;
-                }
-            }
-        } catch (error) {
-            console.error("Error getting template:", error);
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.templates && settings.templates.translateSummarize) {
+          template = settings.templates.translateSummarize;
         }
-
-        // Replace placeholders in template
-        const prompt = template
-            .replace('{subject}', subject)
-            .replace('{content}', emailContent)
-            .replace('{language}', language);
-
-        // Check for TL;DR mode
-        let tldrMode = true;
-        try {
-            const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                if (settings.tldrMode) {
-                    tldrMode = settings.tldrMode === 'true';
-                }
-            }
-        } catch (error) {
-            console.error('Error getting TLDR mode setting:', error);
+        if (settings.language) {
+          language = settings.language;
         }
-
-        if (tldrMode) {
-            // Generate TL;DR first
-            const tldrContent = await generateTldrContent(prompt, apiKey);
-            hideLoading();
-            showResults(tldrContent, TYPES.TRANSLATE_SUMMARIZE);
-
-            // Then generate full content in the background
-            const fullContent = await generateContent(prompt, apiKey);
-
-
-            // display notification of full content
-            updateResults(fullContent);
-            updateExpandButton(true);
-        } else {
-            // Generate full content only
-            const result = await generateContent(prompt, apiKey);
-            showResults(result, TYPES.TRANSLATE_SUMMARIZE);
-        }
+      }
     } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
+      console.error("Error getting template:", error);
     }
+
+    // Replace placeholders in template
+    const prompt = template
+      .replace('{subject}', subject)
+      .replace('{content}', emailContent)
+      .replace('{language}', language);
+
+    // Check for TL;DR mode
+    let tldrMode = true;
+    try {
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.tldrMode) {
+          tldrMode = settings.tldrMode === 'true';
+        }
+      }
+    } catch (error) {
+      console.error('Error getting TLDR mode setting:', error);
+    }
+
+    if (tldrMode) {
+      // Generate TL;DR first
+      const tldrContent = await generateTldrContent(prompt, apiKey);
+      hideLoading();
+      showResults(tldrContent, TYPES.TRANSLATE_SUMMARIZE);
+
+      // Then generate full content in the background
+      const fullContent = await generateContent(prompt, apiKey);
+
+
+      // display notification of full content
+      updateResults(fullContent);
+      updateExpandButton(true);
+    } else {
+      // Generate full content only
+      const result = await generateContent(prompt, apiKey);
+      showResults(result, TYPES.TRANSLATE_SUMMARIZE);
+    }
+  } catch (error) {
+    showNotification(`Error: ${error.message}`, 'error');
+  }
 }
 
 /**
  * Show loading indicator with message
  */
 function showLoading(message = "Loading...") {
-    // Show loading section
-    const loadingSection = document.getElementById("loading");
-    loadingSection.style.display = "block";
+  // Show loading section
+  const loadingSection = document.getElementById("loading");
+  loadingSection.style.display = "block";
 
-    // Update loading message
-    const loadingMessage = document.getElementById("loading-message");
-    loadingMessage.textContent = message;
+  // Update loading message
+  const loadingMessage = document.getElementById("loading-message");
+  loadingMessage.textContent = message;
 
-    // Hide other sections
-    document.getElementById("landing-screen").style.display = "none";
-    document.getElementById("result-section").style.display = "none";
+  // Hide other sections
+  document.getElementById("landing-screen").style.display = "none";
+  document.getElementById("result-section").style.display = "none";
 }
 
 /**
  * Hide loading indicator
  */
 function hideLoading() {
-    const loadingSection = document.getElementById("loading");
-    if (loadingSection) {
-        loadingSection.style.display = "none";
-    }
+  const loadingSection = document.getElementById("loading");
+  if (loadingSection) {
+    loadingSection.style.display = "none";
+  }
 }
 
 // Function to show the results
 function showResults(content, type) {
 
-    // Reset the full result content
-    document.getElementById("result-content").innerHTML = "";
-    // Reset the tldr content
-    document.getElementById("tldr-content").innerHTML = "";
+  // Reset the full result content
+  document.getElementById("result-content").innerHTML = "";
+  // Reset the tldr content
+  document.getElementById("tldr-content").innerHTML = "";
 
-    // Reset the expand button
+  // Reset the expand button
+  const expandButton = document.getElementById("expand-content");
+  if (expandButton) {
+    expandButton.disabled = true;
+    expandButton.classList.add("ms-Button--disabled");
+    expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+    expandButton.classList.remove('ms-Button--primary');
+  }
+
+  // Hide loading section
+  document.getElementById("loading").style.display = "none";
+
+  // Show result section
+  document.getElementById("result-section").style.display = "block";
+
+  // Hide landing screen
+  document.getElementById("landing-screen").style.display = "none";
+
+  // Show the app body
+  document.getElementById("app-body").style.display = "block";
+
+  // Check for TL;DR mode
+  let tldrMode = true;
+  try {
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.tldrMode) {
+        tldrMode = settings.tldrMode === 'true';
+      }
+    }
+  } catch (error) {
+    console.error('Error getting TLDR mode setting:', error);
+  }
+
+  // Update content based on TL;DR mode
+  if (tldrMode) {
+    // For TL;DR mode, show the quick summary first
+    document.getElementById("tldr-content").innerHTML = marked.parse(content);
+
+    // // Show loading spinner in full content section
+    // const fullContentContainer = document.getElementById("full-content-container");
+    // fullContentContainer.style.display = "block";
+    // fullContentContainer.innerHTML = `
+    //     <div class="loading-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+    //         <div class="spinner"></div>
+    //         <p style="margin-top: 10px; color: var(--text-secondary);">Generating full content...</p>
+    //     </div>
+    // `;
+
+    // Disable expand button and set to loading state
     const expandButton = document.getElementById("expand-content");
     if (expandButton) {
-        expandButton.disabled = true;
-        expandButton.classList.add("ms-Button--disabled");
-        expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-        expandButton.classList.remove('ms-Button--primary');
+      expandButton.disabled = true;
+      expandButton.classList.add("ms-Button--disabled");
+      expandButton.innerHTML = '<span class="ms-Button-label">Loading Full Content...</span>';
     }
+  } else {
+    // For non-TL;DR mode, show the full content
+    document.getElementById("tldr-content").innerHTML = marked.parse(content);
 
-    // Hide loading section
-    document.getElementById("loading").style.display = "none";
-
-    // Show result section
-    document.getElementById("result-section").style.display = "block";
-
-    // Hide landing screen
-    document.getElementById("landing-screen").style.display = "none";
-
-    // Show the app body
-    document.getElementById("app-body").style.display = "block";
-
-    // Check for TL;DR mode
-    let tldrMode = true;
-    try {
-        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-        if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            if (settings.tldrMode) {
-                tldrMode = settings.tldrMode === 'true';
-            }
-        }
-    } catch (error) {
-        console.error('Error getting TLDR mode setting:', error);
+    // Ensure result-content element exists
+    let resultContent = document.getElementById("result-content");
+    if (!resultContent) {
+      resultContent = document.createElement("div");
+      resultContent.id = "result-content";
+      document.getElementById("full-content-container").appendChild(resultContent);
     }
+    resultContent.innerHTML = marked.parse(content);
+    document.getElementById("full-content-container").style.display = "block";
 
-    // Update content based on TL;DR mode
-    if (tldrMode) {
-        // For TL;DR mode, show the quick summary first
-        document.getElementById("tldr-content").innerHTML = marked.parse(content);
-
-        // // Show loading spinner in full content section
-        // const fullContentContainer = document.getElementById("full-content-container");
-        // fullContentContainer.style.display = "block";
-        // fullContentContainer.innerHTML = `
-        //     <div class="loading-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
-        //         <div class="spinner"></div>
-        //         <p style="margin-top: 10px; color: var(--text-secondary);">Generating full content...</p>
-        //     </div>
-        // `;
-
-        // Disable expand button and set to loading state
-        const expandButton = document.getElementById("expand-content");
-        if (expandButton) {
-            expandButton.disabled = true;
-            expandButton.classList.add("ms-Button--disabled");
-            expandButton.innerHTML = '<span class="ms-Button-label">Loading Full Content...</span>';
-        }
-    } else {
-        // For non-TL;DR mode, show the full content
-        document.getElementById("tldr-content").innerHTML = marked.parse(content);
-
-        // Ensure result-content element exists
-        let resultContent = document.getElementById("result-content");
-        if (!resultContent) {
-            resultContent = document.createElement("div");
-            resultContent.id = "result-content";
-            document.getElementById("full-content-container").appendChild(resultContent);
-        }
-        resultContent.innerHTML = marked.parse(content);
-        document.getElementById("full-content-container").style.display = "block";
-
-        // Enable expand button and set to normal state
-        const expandButton = document.getElementById("expand-content");
-        if (expandButton) {
-            expandButton.disabled = false;
-            expandButton.classList.remove("ms-Button--disabled");
-            expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-            expandButton.classList.add('ms-Button--primary');
-        }
+    // Enable expand button and set to normal state
+    const expandButton = document.getElementById("expand-content");
+    if (expandButton) {
+      expandButton.disabled = false;
+      expandButton.classList.remove("ms-Button--disabled");
+      expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+      expandButton.classList.add('ms-Button--primary');
     }
+  }
 
-    // Show/hide copy reply button based on type
-    const copyReplyButton = document.getElementById("copy-reply");
-    if (copyReplyButton) {
-        copyReplyButton.style.display = type === TYPES.REPLY ? "inline-block" : "none";
-    }
+  // Show/hide copy reply button based on type
+  const copyReplyButton = document.getElementById("copy-reply");
+  if (copyReplyButton) {
+    copyReplyButton.style.display = type === TYPES.REPLY ? "inline-block" : "none";
+  }
 
-    // Show/hide copy result button based on type
-    const copyResultButton = document.getElementById("copy-result");
-    if (copyResultButton) {
-        copyResultButton.style.display = type === TYPES.REPLY ? "none" : "inline-block";
-    }
+  // Show/hide copy result button based on type
+  const copyResultButton = document.getElementById("copy-result");
+  if (copyResultButton) {
+    copyResultButton.style.display = type === TYPES.REPLY ? "none" : "inline-block";
+  }
 
-    // Show/hide generate reply button based on type and settings
-    const generateReplyButton = document.getElementById("generate-reply");
-    if (generateReplyButton) {
-        const showReply = localStorage.getItem('my_sidekick_michael_settings') &&
-            JSON.parse(localStorage.getItem('my_sidekick_michael_settings')).showReply === 'true';
-        generateReplyButton.style.display = type === TYPES.REPLY ? "none" : (showReply ? "inline-block" : "none");
-    }
+  // Show/hide generate reply button based on type and settings
+  const generateReplyButton = document.getElementById("generate-reply");
+  if (generateReplyButton) {
+    const showReply = localStorage.getItem('my_sidekick_michael_settings') &&
+      JSON.parse(localStorage.getItem('my_sidekick_michael_settings')).showReply === 'true';
+    generateReplyButton.style.display = type === TYPES.REPLY ? "none" : (showReply ? "inline-block" : "none");
+  }
 
-    // Apply font size from settings
-    try {
-        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-        if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            if (settings.fontSize) {
-                applyFontSize(settings.fontSize);
-            }
-            // Update reply button visibility
-            if (settings.showReply) {
-                updateReplyButtonVisibility(settings.showReply === 'true');
-            }
-        }
-    } catch (error) {
-        console.error('Error applying font size:', error);
+  // Apply font size from settings
+  try {
+    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.fontSize) {
+        applyFontSize(settings.fontSize);
+      }
+      // Update reply button visibility
+      if (settings.showReply) {
+        updateReplyButtonVisibility(settings.showReply === 'true');
+      }
     }
+  } catch (error) {
+    console.error('Error applying font size:', error);
+  }
 
-    // Scroll to top of result content if elements exist
-    const resultContent = document.getElementById("result-content");
-    const tldrContent = document.getElementById("tldr-content");
-    if (resultContent) {
-        resultContent.scrollTop = 0;
-    }
-    if (tldrContent) {
-        tldrContent.scrollTop = 0;
-    }
+  // Scroll to top of result content if elements exist
+  const resultContent = document.getElementById("result-content");
+  const tldrContent = document.getElementById("tldr-content");
+  if (resultContent) {
+    resultContent.scrollTop = 0;
+  }
+  if (tldrContent) {
+    tldrContent.scrollTop = 0;
+  }
 }
 
 function updateResults(content) {
@@ -1432,9 +1439,9 @@ function updateResults(content) {
 
 // Function to reset the UI
 function resetUI() {
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("result-section").style.display = "none";
-    document.getElementById("landing-screen").style.display = "block";
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("result-section").style.display = "none";
+  document.getElementById("landing-screen").style.display = "block";
 }
 
 /**
@@ -1451,22 +1458,22 @@ function updateReplyButtonVisibility(show) {
  * Expand the full content when the expand button is clicked
  */
 function expandContent() {
-    const expandButton = document.getElementById('expand-content');
-    if (expandButton.disabled) {
-        return; // Don't do anything if button is disabled
-    }
+  const expandButton = document.getElementById('expand-content');
+  if (expandButton.disabled) {
+    return; // Don't do anything if button is disabled
+  }
 
-    const fullContentContainer = document.getElementById('full-content-container');
+  const fullContentContainer = document.getElementById('full-content-container');
 
-    if (fullContentContainer.style.display === 'none') {
-        fullContentContainer.style.display = 'block';
-        expandButton.innerHTML = '<span class="ms-Button-label">Hide Full Content</span>';
-        expandButton.classList.remove('ms-Button--primary');
-    } else {
-        fullContentContainer.style.display = 'none';
-        expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-        expandButton.classList.add('ms-Button--primary');
-    }
+  if (fullContentContainer.style.display === 'none') {
+    fullContentContainer.style.display = 'block';
+    expandButton.innerHTML = '<span class="ms-Button-label">Hide Full Content</span>';
+    expandButton.classList.remove('ms-Button--primary');
+  } else {
+    fullContentContainer.style.display = 'none';
+    expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+    expandButton.classList.add('ms-Button--primary');
+  }
 }
 
 // Format a reply with clear subject and body sections
@@ -1533,15 +1540,15 @@ async function generateReply() {
     // Get reply template from storage or use default
     let template = DEFAULT_TEMPLATES.reply;
     try {
-        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-        if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            if (settings.templates && settings.templates.reply) {
-                template = settings.templates.reply;
-            }
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.templates && settings.templates.reply) {
+          template = settings.templates.reply;
         }
+      }
     } catch (error) {
-        console.error("Error getting reply template:", error);
+      console.error("Error getting reply template:", error);
     }
 
     // Get language (assuming you still want language for reply)
@@ -1549,22 +1556,22 @@ async function generateReply() {
 
     // Replace placeholders in template
     const prompt = template
-        .replace('{subject}', subject)
-        .replace('{content}', emailContent)
-        .replace('{language}', getLanguageText(language)); // Ensure language name is used if placeholder exists
+      .replace('{subject}', subject)
+      .replace('{content}', emailContent)
+      .replace('{language}', getLanguageText(language)); // Ensure language name is used if placeholder exists
 
     // Get reply model from settings
     let replyModelOverride = null;
     try {
-        const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-        if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            if (settings.replyModel) {
-                replyModelOverride = settings.replyModel;
-            }
+      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        if (settings.replyModel) {
+          replyModelOverride = settings.replyModel;
         }
+      }
     } catch (error) {
-        console.error("Error getting reply model:", error);
+      console.error("Error getting reply model:", error);
     }
 
     const result = await generateContent(prompt, apiKey, replyModelOverride);
@@ -1619,32 +1626,32 @@ function copyReply() {
  * Extract TL;DR from content, or generate a brief summary
  */
 function extractTLDR(content) {
-    // Check if the content already contains a TL;DR section
-    const tldrRegex = /TL;DR:?\s*(.*?)(?:\n\n|$)/is;
-    const tldrMatch = content.match(tldrRegex);
+  // Check if the content already contains a TL;DR section
+  const tldrRegex = /TL;DR:?\s*(.*?)(?:\n\n|$)/is;
+  const tldrMatch = content.match(tldrRegex);
 
-    if (tldrMatch && tldrMatch[1]) {
-        return tldrMatch[1];
-    }
+  if (tldrMatch && tldrMatch[1]) {
+    return tldrMatch[1];
+  }
 
-    // Check for "Summary:" section
-    const summaryRegex = /Summary:?\s*(.*?)(?:\n\n|$)/is;
-    const summaryMatch = content.match(summaryRegex);
+  // Check for "Summary:" section
+  const summaryRegex = /Summary:?\s*(.*?)(?:\n\n|$)/is;
+  const summaryMatch = content.match(summaryRegex);
 
-    if (summaryMatch && summaryMatch[1]) {
-        return summaryMatch[1];
-    }
+  if (summaryMatch && summaryMatch[1]) {
+    return summaryMatch[1];
+  }
 
-    // If no TL;DR or Summary found, use the first paragraph
-    const firstParagraph = content.split('\n\n')[0];
-    if (firstParagraph && firstParagraph.length < 300) {
-        return firstParagraph;
-    } else if (firstParagraph) {
-        return firstParagraph.substring(0, 250) + '...';
-    }
+  // If no TL;DR or Summary found, use the first paragraph
+  const firstParagraph = content.split('\n\n')[0];
+  if (firstParagraph && firstParagraph.length < 300) {
+    return firstParagraph;
+  } else if (firstParagraph) {
+    return firstParagraph.substring(0, 250) + '...';
+  }
 
-    // Fallback
-    return content.substring(0, 200) + '...';
+  // Fallback
+  return content.substring(0, 200) + '...';
 }
 
 /**
@@ -1796,10 +1803,14 @@ function setFontSize(size) {
  */
 function getFontSizeValue(size) {
   switch (size) {
-    case "small": return "0.875rem";
-    case "medium": return "1rem";
-    case "large": return "1.125rem";
-    default: return "1rem";
+    case "small":
+      return "0.875rem";
+    case "medium":
+      return "1rem";
+    case "large":
+      return "1.125rem";
+    default:
+      return "1rem";
   }
 }
 
@@ -1807,80 +1818,80 @@ function getFontSizeValue(size) {
  * Reset all settings to defaults
  */
 function resetAllSettings() {
-    // Reset model selection
-    document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
+  // Reset model selection
+  document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
 
-    // Reset language selection
-    document.getElementById('dropdown-language').value = 'ko';
+  // Reset language selection
+  document.getElementById('dropdown-language').value = 'ko';
 
-    // Reset event title language selection
-    document.getElementById('dropdown-event-title-language').value = 'en';
+  // Reset event title language selection
+  document.getElementById('dropdown-event-title-language').value = 'en';
 
-    // Reset theme selection
-    document.getElementById('dropdown-theme').value = 'system';
+  // Reset theme selection
+  document.getElementById('dropdown-theme').value = 'system';
 
-    // Reset font size selection
-    document.getElementById('dropdown-font-size').value = 'medium';
+  // Reset font size selection
+  document.getElementById('dropdown-font-size').value = 'medium';
 
-    // Reset TLDR mode selection
-    document.getElementById('dropdown-tldr-mode').value = 'true';
+  // Reset TLDR mode selection
+  document.getElementById('dropdown-tldr-mode').value = 'true';
 
-    // Reset show reply selection
-    document.getElementById('dropdown-show-reply').value = 'true';
+  // Reset show reply selection
+  document.getElementById('dropdown-show-reply').value = 'true';
 
-    // Reset reply model selection
-    document.getElementById('dropdown-reply-model').value = 'gemini-2.0-flash-lite';
+  // Reset reply model selection
+  document.getElementById('dropdown-reply-model').value = 'gemini-2.0-flash-lite';
 
-    // Reset autorun settings
-    document.getElementById('dropdown-autorun').value = 'false';
-    document.getElementById('dropdown-autorun-option').value = 'summarize';
+  // Reset autorun settings
+  document.getElementById('dropdown-autorun').value = 'false';
+  document.getElementById('dropdown-autorun-option').value = 'summarize';
 
-    // Reset dev mode settings
-    document.getElementById('dropdown-dev-mode').value = 'false';
-    document.getElementById('dropdown-dev-server').value = '';
-    document.getElementById('dev-server-group').style.display = 'none';
+  // Reset dev mode settings
+  document.getElementById('dropdown-dev-mode').value = 'false';
+  document.getElementById('dropdown-dev-server').value = '';
+  document.getElementById('dev-server-group').style.display = 'none';
 
-    // Reset templates (calls the function above)
-    resetTemplates();
+  // Reset templates (calls the function above)
+  resetTemplates();
 
-    // Clear API key
-    document.getElementById('dropdown-api-key').value = '';
+  // Clear API key
+  document.getElementById('dropdown-api-key').value = '';
 
-    // Clear saved settings from localStorage
-    localStorage.removeItem('michael_api_key');
-    localStorage.removeItem('michael_settings'); // Clear all settings as well
+  // Clear saved settings from localStorage
+  localStorage.removeItem('michael_api_key');
+  localStorage.removeItem('michael_settings'); // Clear all settings as well
 
-    // Apply default theme
-    applyCurrentTheme();
+  // Apply default theme
+  applyCurrentTheme();
 
-    // Apply default font size
-    applyFontSize('medium');
+  // Apply default font size
+  applyFontSize('medium');
 
-    // Update reply button visibility
-    updateReplyButtonVisibility(true);
+  // Update reply button visibility
+  updateReplyButtonVisibility(true);
 
-    // Update dev badges visibility
-    updateDevBadges(false);
+  // Update dev badges visibility
+  updateDevBadges(false);
 
-    showNotification('All settings reset to defaults', 'success');
+  showNotification('All settings reset to defaults', 'success');
 
-    // Re-initialize tabs to show the first one after reset
-    initializeSettingsTabs();
+  // Re-initialize tabs to show the first one after reset
+  initializeSettingsTabs();
 }
 
 /**
  * Update dev badges visibility
  */
 function updateDevBadges(show) {
-    const devBadge = document.getElementById('dev-badge');
-    const footerDevBadge = document.getElementById('footer-dev-badge');
+  const devBadge = document.getElementById('dev-badge');
+  const footerDevBadge = document.getElementById('footer-dev-badge');
 
-    if (devBadge) {
-        devBadge.style.display = show ? 'block' : 'none';
-    }
-    if (footerDevBadge) {
-        footerDevBadge.style.display = show ? 'block' : 'none';
-    }
+  if (devBadge) {
+    devBadge.style.display = show ? 'block' : 'none';
+  }
+  if (footerDevBadge) {
+    footerDevBadge.style.display = show ? 'block' : 'none';
+  }
 }
 
 // Get event title language from settings
@@ -2010,11 +2021,11 @@ async function parseEventDetailsWithGemini(emailContent) {
         throw new Error('Event title not found.');
       }
 
-      if (!eventDetails.start?.dateTime) {
+      if (!eventDetails.start ? .dateTime) {
         throw new Error('Event start time not found.');
       }
 
-      if (!eventDetails.end?.dateTime) {
+      if (!eventDetails.end ? .dateTime) {
         throw new Error('Event end time not found.');
       }
 
@@ -2044,7 +2055,7 @@ async function parseEventDetailsWithGemini(emailContent) {
 async function createCalendarEvent(eventDetails) {
   try {
     // Validate required fields
-    if (!eventDetails.subject || !eventDetails.start?.dateTime || !eventDetails.end?.dateTime) {
+    if (!eventDetails.subject || !eventDetails.start ? .dateTime || !eventDetails.end ? .dateTime) {
       throw new Error('Required event information is missing.');
     }
 
@@ -2075,8 +2086,8 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location?.displayName || '',
-      body: eventDetails.body?.content || '',
+      location: eventDetails.location ? .displayName || '',
+      body: eventDetails.body ? .content || '',
       subject: eventDetails.subject
     };
 
@@ -2088,8 +2099,8 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location?.displayName || '',
-      body: eventDetails.body?.content || '',
+      location: eventDetails.location ? .displayName || '',
+      body: eventDetails.body ? .content || '',
       subject: eventDetails.subject
     });
 
@@ -2165,7 +2176,7 @@ async function handleCalendarEvent() {
     `;
 
     // Add event listener to clipboard copy button
-    document.getElementById("copy-email-content").addEventListener("click", function() {
+    document.getElementById("copy-email-content").addEventListener("click", function () {
       navigator.clipboard.writeText(emailContent)
         .then(() => {
           showNotification("Email content copied to clipboard", 'info');
@@ -2200,9 +2211,9 @@ async function handleCalendarEvent() {
       console.error('Event extraction error:', extractionError);
       // Clean up error message by removing the prefix if present
       const errorMessage = extractionError.message;
-      const cleanedMessage = errorMessage.includes('Failed to extract event information:')
-        ? errorMessage.split('Failed to extract event information:')[1].trim()
-        : errorMessage;
+      const cleanedMessage = errorMessage.includes('Failed to extract event information:') ?
+        errorMessage.split('Failed to extract event information:')[1].trim() :
+        errorMessage;
 
       document.getElementById("result-content").innerHTML = `
         <div class="event-details-header">
@@ -2266,89 +2277,91 @@ async function updateCalendarButtonState() {
  * Export current templates as markdown file
  */
 function exportTemplatesAsMarkdown() {
+  try {
+    // Get current settings
+    const savedSettings = localStorage.getItem('michael_settings');
+    const settings = savedSettings ? JSON.parse(savedSettings) : {};
+    const apiKey = localStorage.getItem('michael_api_key') || 'Not Set'; // Get API key
+
+    // Get current date for filename
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD format
+
+    // Get current user information if available
+    let userInfo = '';
     try {
-        // Get current settings
-        const savedSettings = localStorage.getItem('michael_settings');
-        const settings = savedSettings ? JSON.parse(savedSettings) : {};
-        const apiKey = localStorage.getItem('michael_api_key') || 'Not Set'; // Get API key
+      if (Office.context.mailbox && Office.context.mailbox.userProfile) {
+        const user = Office.context.mailbox.userProfile;
+        userInfo = `\n\n*Exported by: ${user.displayName} (${user.emailAddress})*`;
+      }
+    } catch (err) {
+      console.log('User profile not available');
+    }
 
-        // Get current date for filename
-        const now = new Date();
-        const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD format
+    // Create markdown content
+    let markdownContent = `# Michael Prompt Templates\n\n`;
+    markdownContent += `*Exported on: ${now.toLocaleString()}*${userInfo}\n\n`;
 
-        // Get current user information if available
-        let userInfo = '';
-        try {
-            if (Office.context.mailbox && Office.context.mailbox.userProfile) {
-                const user = Office.context.mailbox.userProfile;
-                userInfo = `\n\n*Exported by: ${user.displayName} (${user.emailAddress})*`;
-            }
-        } catch (err) {
-            console.log('User profile not available');
-        }
+    // Add model information
+    markdownContent += `## General Settings\n\n`;
+    markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
+    markdownContent += `- **Reply Model**: ${settings.replyModel || 'gemini-2.0-flash-lite'}\n`; // Add reply model
+    markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
+    markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
 
-        // Create markdown content
-        let markdownContent = `# Michael Prompt Templates\n\n`;
-        markdownContent += `*Exported on: ${now.toLocaleString()}*${userInfo}\n\n`;
+    // Add prompts
+    markdownContent += `## Prompt Templates\n\n`;
 
-        // Add model information
-        markdownContent += `## General Settings\n\n`;
-        markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
-        markdownContent += `- **Reply Model**: ${settings.replyModel || 'gemini-2.0-flash-lite'}\n`; // Add reply model
-        markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
-        markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
-
-        // Add prompts
-        markdownContent += `## Prompt Templates\n\n`;
-
-        // Summarize template
-        markdownContent += `### Summarize Template\n\n\`\`\`\n${
+    // Summarize template
+    markdownContent += `### Summarize Template\n\n\`\`\`\n${
             settings.templates && settings.templates.summarize ?
             settings.templates.summarize :
             DEFAULT_TEMPLATES.summarize
         }\n\`\`\`\n\n`;
 
-        // Translate template
-        markdownContent += `### Translate Template\n\n\`\`\`\n${
+    // Translate template
+    markdownContent += `### Translate Template\n\n\`\`\`\n${
             settings.templates && settings.templates.translate ?
             settings.templates.translate :
             DEFAULT_TEMPLATES.translate
         }\n\`\`\`\n\n`;
 
-        // Translate & Summarize template
-        markdownContent += `### Translate & Summarize Template\n\n\`\`\`\n${
+    // Translate & Summarize template
+    markdownContent += `### Translate & Summarize Template\n\n\`\`\`\n${
             settings.templates && settings.templates.translateSummarize ?
             settings.templates.translateSummarize :
             DEFAULT_TEMPLATES.translateSummarize
         }\n\`\`\`\n\n`;
 
-        // Reply template
-        markdownContent += `### Reply Template\n\n\`\`\`\n${
+    // Reply template
+    markdownContent += `### Reply Template\n\n\`\`\`\n${
             settings.templates && settings.templates.reply ?
             settings.templates.reply :
             DEFAULT_TEMPLATES.reply
         }\n\`\`\`\n\n`;
 
-        // Create download link
-        const blob = new Blob([markdownContent], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `michael-templates-${dateStr}.md`;
+    // Create download link
+    const blob = new Blob([markdownContent], {
+      type: 'text/markdown'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `michael-templates-${dateStr}.md`;
 
-        // Append to body, click, and remove
-        document.body.appendChild(a);
-        a.click();
+    // Append to body, click, and remove
+    document.body.appendChild(a);
+    a.click();
 
-        // Clean up
-        setTimeout(function() {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
+    // Clean up
+    setTimeout(function () {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
 
-        showNotification('Templates exported successfully', 'success');
-    } catch (error) {
-        console.error('Error exporting templates:', error);
-        showNotification('Failed to export templates', 'error');
-    }
+    showNotification('Templates exported successfully', 'success');
+  } catch (error) {
+    console.error('Error exporting templates:', error);
+    showNotification('Failed to export templates', 'error');
+  }
 }
