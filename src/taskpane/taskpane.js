@@ -186,7 +186,7 @@ function initializeSettingsTabs() {
 
   // Ensure the first tab is active on initialization
   const firstTabButton = tabButtons[0];
-  const firstTabContentId = firstTabButton ? .getAttribute("data-tab");
+  const firstTabContentId = firstTabButton?.getAttribute("data-tab");
   const firstTabContent = document.getElementById(firstTabContentId);
 
   tabButtons.forEach(btn => btn.classList.remove("active"));
@@ -794,7 +794,7 @@ async function generateContent(prompt, apiKey, modelOverride = null, isTldr = fa
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error ? .message || 'Error generating content');
+      throw new Error(data.error?.message || 'Error generating content');
     }
 
     if (!data.candidates || data.candidates.length === 0) {
@@ -2021,11 +2021,11 @@ async function parseEventDetailsWithGemini(emailContent) {
         throw new Error('Event title not found.');
       }
 
-      if (!eventDetails.start ? .dateTime) {
+      if (!eventDetails.start?.dateTime) {
         throw new Error('Event start time not found.');
       }
 
-      if (!eventDetails.end ? .dateTime) {
+      if (!eventDetails.end?.dateTime) {
         throw new Error('Event end time not found.');
       }
 
@@ -2055,7 +2055,7 @@ async function parseEventDetailsWithGemini(emailContent) {
 async function createCalendarEvent(eventDetails) {
   try {
     // Validate required fields
-    if (!eventDetails.subject || !eventDetails.start ? .dateTime || !eventDetails.end ? .dateTime) {
+    if (!eventDetails.subject || !eventDetails.start?.dateTime || !eventDetails.end?.dateTime) {
       throw new Error('Required event information is missing.');
     }
 
@@ -2086,8 +2086,8 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location ? .displayName || '',
-      body: eventDetails.body ? .content || '',
+      location: eventDetails.location?.displayName || '',
+      body: eventDetails.body?.content || '',
       subject: eventDetails.subject
     };
 
@@ -2099,8 +2099,8 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location ? .displayName || '',
-      body: eventDetails.body ? .content || '',
+      location: eventDetails.location?.displayName || '',
+      body: eventDetails.body?.content || '',
       subject: eventDetails.subject
     });
 
