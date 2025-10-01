@@ -3,10 +3,7 @@
  * See LICENSE in the project root for license information.
  */
 
-/* global document, Office */
-import {
-  marked
-} from 'marked';
+/* global document, Office, marked */
 
 // Safety settings for Gemini API
 const safetySettings = [{
@@ -134,6 +131,29 @@ Content:
 };
 
 /**
+ * Migrate legacy localStorage keys to unified 'michael_*' keys
+ */
+function migrateSettingsKeys() {
+  try {
+    const legacySettings = localStorage.getItem('my_sidekick_michael_settings');
+    const currentSettings = localStorage.getItem('michael_settings');
+    if (!currentSettings && legacySettings) {
+      localStorage.setItem('michael_settings', legacySettings);
+    }
+    localStorage.removeItem('my_sidekick_michael_settings');
+
+    const legacyApiKey = localStorage.getItem('my_sidekick_michael_api_key');
+    const currentApiKey = localStorage.getItem('michael_api_key');
+    if (!currentApiKey && legacyApiKey) {
+      localStorage.setItem('michael_api_key', legacyApiKey);
+    }
+    localStorage.removeItem('my_sidekick_michael_api_key');
+  } catch (e) {
+    // no-op
+  }
+}
+
+/**
  * Toggle the visibility of the settings view and handle main content visibility.
  */
 function toggleSettingsView() {
@@ -200,6 +220,7 @@ function initializeSettingsTabs() {
 
 Office.onReady((info) => {
   if (info.host === Office.HostType.Outlook) {
+    migrateSettingsKeys();
     document.getElementById("sideload-msg").style.display = "none";
     document.getElementById("app-body").style.display = "flex";
 
@@ -210,7 +231,7 @@ Office.onReady((info) => {
     let autorunEnabled = false;
     let selectedOption = null;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         autorunEnabled = settings.autorun === 'true';
@@ -280,6 +301,9 @@ Office.onReady((info) => {
 
     // Expand button listener
     document.getElementById("expand-content").addEventListener("click", expandContent);
+    // Copy reply listener if present
+    const copyReplyBtn = document.getElementById("copy-reply");
+    if (copyReplyBtn) copyReplyBtn.addEventListener("click", copyReply);
 
     // Copy buttons listeners
     document.getElementById("copy-result").addEventListener("click", copyResult);
@@ -307,7 +331,7 @@ Office.onReady((info) => {
         let autorunEnabled = false;
         let selectedOption = null;
         try {
-          const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+          const savedSettings = localStorage.getItem('michael_settings');
           if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             autorunEnabled = settings.autorun === 'true';
@@ -344,7 +368,7 @@ Office.onReady((info) => {
               let autorunEnabled = false;
               let selectedOption = null;
               try {
-                const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+                const savedSettings = localStorage.getItem('michael_settings');
                 if (savedSettings) {
                   const settings = JSON.parse(savedSettings);
                   autorunEnabled = settings.autorun === 'true';
@@ -450,17 +474,17 @@ function applyCurrentTheme() {
 
   // Set sideload logo (White on Dark, Black on Light)
   if (sideloadLogo) {
-    sideloadLogo.src = currentThemeIsDark ? 'assets/meet-michael-white.png' : 'assets/meet-michael-black.png';
+    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
   }
 
   // Set landing page logo (White on Dark, Black on Light - Corrected)
   if (landingLogo) {
-    landingLogo.src = currentThemeIsDark ? 'assets/meet-michael-white.png' : 'assets/meet-michael-black.png';
+    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
   }
 
   // Set brand logo (White on Dark, Black on Light)
   if (brandLogo) {
-    brandLogo.src = currentThemeIsDark ? 'assets/michael-white.png' : 'assets/michael-black.png';
+    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
   }
   // ----- Logo Switching Logic End -----
 }
@@ -553,7 +577,7 @@ function saveDropdownSettings() {
   // Get existing settings
   let settings = {};
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const savedSettings = localStorage.getItem('michael_settings');
     if (savedSettings) {
       settings = JSON.parse(savedSettings);
     }
@@ -573,6 +597,7 @@ function saveDropdownSettings() {
   const showReply = document.getElementById('dropdown-show-reply').value;
   // Get reply template
   const replyTemplate = document.getElementById('dropdown-reply-template').value;
+  const replyModel = document.getElementById('dropdown-reply-model') ? document.getElementById('dropdown-reply-model').value : undefined;
   const autorun = document.getElementById('dropdown-autorun').value;
   const autorunOption = document.getElementById('dropdown-autorun-option').value;
   const devMode = document.getElementById('dropdown-dev-mode').value;
@@ -590,7 +615,7 @@ function saveDropdownSettings() {
   settings.fontSize = fontSize;
   settings.tldrMode = tldrMode;
   settings.showReply = showReply;
-  settings.replyModel = replyTemplate;
+  if (replyModel) settings.replyModel = replyModel;
   settings.autorun = autorun;
   settings.autorunOption = autorunOption;
   settings.devMode = devMode;
@@ -608,13 +633,13 @@ function saveDropdownSettings() {
   settings.templates.reply = replyTemplate;
 
   // Save settings
-  localStorage.setItem('my_sidekick_michael_settings', JSON.stringify(settings));
+  localStorage.setItem('michael_settings', JSON.stringify(settings));
 
   // Save API key separately
   if (apiKey) {
-    localStorage.setItem("my_sidekick_michael_api_key", apiKey);
+    localStorage.setItem("michael_api_key", apiKey);
   } else {
-    localStorage.removeItem("my_sidekick_michael_api_key"); // Remove if empty
+    localStorage.removeItem("michael_api_key");
   }
 
   // Apply theme if changed
@@ -641,10 +666,10 @@ function saveDropdownSettings() {
  */
 function resetTemplates() {
   // Save default templates back into the main settings object
-  const currentSettingsText = localStorage.getItem("my_sidekick_michael_settings");
+  const currentSettingsText = localStorage.getItem("michael_settings");
   const currentSettings = currentSettingsText ? JSON.parse(currentSettingsText) : {};
   currentSettings.templates = DEFAULT_TEMPLATES;
-  localStorage.setItem("my_sidekick_michael_settings", JSON.stringify(currentSettings));
+  localStorage.setItem("michael_settings", JSON.stringify(currentSettings));
 
   // Update textareas
   document.getElementById('dropdown-summarize-template').value = DEFAULT_TEMPLATES.summarize;
@@ -659,8 +684,8 @@ function resetTemplates() {
  */
 function loadDropdownSettings() {
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
-    const apiKey = localStorage.getItem("my_sidekick_michael_api_key");
+    const savedSettings = localStorage.getItem('michael_settings');
+    const apiKey = localStorage.getItem("michael_api_key");
 
     // Load main settings
     if (savedSettings) {
@@ -677,6 +702,7 @@ function loadDropdownSettings() {
       if (settings.tldrMode) document.getElementById('dropdown-tldr-mode').value = settings.tldrMode;
       if (settings.showReply) document.getElementById('dropdown-show-reply').value = settings.showReply;
       if (settings.devServer) document.getElementById('dropdown-dev-server').value = settings.devServer;
+      if (settings.replyModel && document.getElementById('dropdown-reply-model')) document.getElementById('dropdown-reply-model').value = settings.replyModel;
 
       // Show/hide dev server input based on dev mode
       const devServerGroup = document.getElementById("dev-server-group");
@@ -754,7 +780,7 @@ async function generateContent(prompt, apiKey, modelOverride = null, isTldr = fa
     model = modelOverride;
   } else {
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.model) {
@@ -853,13 +879,13 @@ function getLanguageText(languageCode) {
 
 // Get API key from local storage
 function getApiKey() {
-  return localStorage.getItem("my_sidekick_michael_api_key");
+  return localStorage.getItem("michael_api_key");
 }
 
 // Get language from settings
 function getLanguage() {
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const savedSettings = localStorage.getItem('michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.defaultLanguage) {
@@ -893,7 +919,7 @@ async function summarizeEmail() {
     // Get template from storage or use default
     let template = DEFAULT_TEMPLATES.summarize;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.templates && settings.templates.summarize) {
@@ -912,7 +938,7 @@ async function summarizeEmail() {
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.tldrMode) {
@@ -966,7 +992,7 @@ async function translateEmail() {
     // Get template from storage or use default
     let template = DEFAULT_TEMPLATES.translate;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.templates && settings.templates.translate) {
@@ -985,7 +1011,7 @@ async function translateEmail() {
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.tldrMode) {
@@ -1027,8 +1053,13 @@ function updateExpandButton(isFullContentVisible) {
   if (expandButton) {
     expandButton.disabled = !isFullContentVisible;
     expandButton.classList.toggle('ms-Button--disabled', !isFullContentVisible);
-    expandButton.innerHTML = isFullContentVisible ? 'Show Full Content' : 'Hide Full Content';
-    expandButton.classList.toggle('ms-Button--primary', isFullContentVisible);
+    if (!isFullContentVisible) {
+      expandButton.innerHTML = '<span class="ms-Button-label">Loading Full Content...</span>';
+      expandButton.classList.remove('ms-Button--primary');
+    } else {
+      expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+      expandButton.classList.add('ms-Button--primary');
+    }
   }
 }
 
@@ -1100,7 +1131,7 @@ function markdownToHtml(markdown) {
   // Get the current font size from settings
   let fontSize = 'medium';
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const savedSettings = localStorage.getItem('michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.fontSize) {
@@ -1194,15 +1225,13 @@ async function translateAndSummarizeEmail() {
     // Get template from storage or use default
     let template = DEFAULT_TEMPLATES.translateSummarize;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.templates && settings.templates.translateSummarize) {
           template = settings.templates.translateSummarize;
         }
-        if (settings.language) {
-          language = settings.language;
-        }
+        if (settings.defaultLanguage) language = getLanguageText(settings.defaultLanguage);
       }
     } catch (error) {
       console.error("Error getting template:", error);
@@ -1217,7 +1246,7 @@ async function translateAndSummarizeEmail() {
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.tldrMode) {
@@ -1310,7 +1339,7 @@ function showResults(content, type) {
   // Check for TL;DR mode
   let tldrMode = true;
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const savedSettings = localStorage.getItem('michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.tldrMode) {
@@ -1382,14 +1411,14 @@ function showResults(content, type) {
   // Show/hide generate reply button based on type and settings
   const generateReplyButton = document.getElementById("generate-reply");
   if (generateReplyButton) {
-    const showReply = localStorage.getItem('my_sidekick_michael_settings') &&
-      JSON.parse(localStorage.getItem('my_sidekick_michael_settings')).showReply === 'true';
+    const saved = localStorage.getItem('michael_settings');
+    const showReply = saved && JSON.parse(saved).showReply === 'true';
     generateReplyButton.style.display = type === TYPES.REPLY ? "none" : (showReply ? "inline-block" : "none");
   }
 
   // Apply font size from settings
   try {
-    const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+    const savedSettings = localStorage.getItem('michael_settings');
     if (savedSettings) {
       const settings = JSON.parse(savedSettings);
       if (settings.fontSize) {
@@ -1540,7 +1569,7 @@ async function generateReply() {
     // Get reply template from storage or use default
     let template = DEFAULT_TEMPLATES.reply;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.templates && settings.templates.reply) {
@@ -1563,7 +1592,7 @@ async function generateReply() {
     // Get reply model from settings
     let replyModelOverride = null;
     try {
-      const savedSettings = localStorage.getItem('my_sidekick_michael_settings');
+      const savedSettings = localStorage.getItem('michael_settings');
       if (savedSettings) {
         const settings = JSON.parse(savedSettings);
         if (settings.replyModel) {
@@ -1714,7 +1743,7 @@ function toggleSettings() {
  */
 function saveApiKey() {
   const apiKey = document.getElementById("api-key-input").value;
-  localStorage.setItem("my_sidekick_michael_api_key", apiKey);
+  localStorage.setItem("michael_api_key", apiKey);
   showNotification("API key saved successfully!", "success");
   toggleSettings();
 }
@@ -2281,7 +2310,7 @@ function exportTemplatesAsMarkdown() {
     // Get current settings
     const savedSettings = localStorage.getItem('michael_settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    const apiKey = localStorage.getItem('michael_api_key') || 'Not Set'; // Get API key
+    const apiKey = (localStorage.getItem('michael_api_key') || 'Not Set'); // Get API key
 
     // Get current date for filename
     const now = new Date();

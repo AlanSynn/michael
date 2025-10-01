@@ -113,6 +113,10 @@
                     <button id="generate-reply" class="ms-Button">
                         <span class="ms-Button-label">Generate Reply</span>
                     </button>
+                    <button id="copy-reply" class="ms-Button" style="display: none;">
+                        <span class="ms-Button-label">Copy Reply</span>
+                    </button>
+                    <span id="copy-reply-status" class="copy-status"></span>
                     <span id="copy-status" class="copy-status"></span>
                 </div>
             </div>
@@ -278,6 +282,8 @@
         </div>
     </div>
 
+    <!-- marked.js (CDN) for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Add taskpane.js include -->
     <script type="text/javascript" src="taskpane.js"></script>
 </body>
