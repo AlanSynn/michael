@@ -392,15 +392,15 @@ body {
 .settings-view {
     display: flex;
     flex-direction: column;
-    /* Ensure full height using absolute positioning */
-    position: absolute;
-    top: 0; /* Corrected from 48px, relative to ms-welcome__main */
+    /* Ensure full height using fixed positioning for proper sidebar fit */
+    position: fixed;
+    top: 48px; /* Account for header height */
     left: 0;
     right: 0;
-    bottom: 0; /* Stretch to bottom */
-    background-color: var(--background-secondary);
+    bottom: 0;
+    background-color: var(--background-primary);
     z-index: 50;
-    /* overflow: hidden; Removed to allow content to determine scroll */
+    overflow: hidden; /* Prevent outer scroll, inner content will scroll */
 }
 
 .settings-header {
@@ -458,11 +458,12 @@ body {
 }
 
 .settings-content {
-    flex-grow: 1; /* Allow flex grow */
+    flex: 1 1 auto; /* Allow flex grow and shrink */
     overflow-y: auto; /* Allow vertical scrolling */
-    padding: 20px 16px;
-    /* Explicitly set height to fill remaining space */
-    /* height: calc(100% - 48px - 50px); Removed to let flexbox manage height */
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    padding: 16px;
+    min-height: 0; /* Important for flex scrolling */
+    background-color: var(--background-primary);
 }
 
 .settings-tab-content {
@@ -513,6 +514,7 @@ body {
     display: flex;
     gap: 10px;
     font-size: 14px;
+    background-color: transparent;
 }
 
 .settings-footer-actions {
@@ -527,7 +529,7 @@ body {
 
 /* Update dark theme specific styles if needed */
 [data-theme="dark"] .settings-view {
-    background-color: var(--background-secondary);
+    background-color: var(--background-primary);
 }
 
 [data-theme="dark"] .settings-header {
@@ -536,12 +538,16 @@ body {
 }
 
 [data-theme="dark"] .settings-tabs {
-     background-color: var(--background-primary);
+    background-color: var(--background-primary);
     border-bottom-color: var(--border-color);
 }
 
+[data-theme="dark"] .settings-content {
+    background-color: var(--background-primary);
+}
+
 [data-theme="dark"] .settings-tab-button {
-     color: var(--text-secondary);
+    color: var(--text-secondary);
 }
 
 [data-theme="dark"] .settings-tab-button.active {
@@ -551,6 +557,11 @@ body {
 
 [data-theme="dark"] .settings-group label {
     color: var(--text-primary);
+}
+
+[data-theme="dark"] .settings-footer-actions {
+    background-color: var(--background-primary);
+    border-top-color: var(--border-color);
 }
 
 /* Form Elements */
@@ -958,12 +969,34 @@ html[data-font-size="large"] {
     margin-bottom: 12px;
     padding-bottom: 8px;
     color: #f3f3f3;
+    background-color: transparent;
+}
+
+[data-theme="dark"] .settings-tab-content {
+    background-color: transparent;
+}
+
+[data-theme="dark"] .template-actions {
+    background-color: transparent;
 }
 
 [data-theme="dark"] .settings-dropdown-container {
-    background-color: var(--background-primary);
+    background-color: transparent;
     padding: 10px;
     border-radius: 4px;
+}
+
+[data-theme="dark"] .result-container {
+    background-color: transparent;
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .result-summary {
+    background-color: transparent;
+}
+
+[data-theme="dark"] #full-content-container {
+    background-color: transparent;
 }
 
 [data-theme="dark"] textarea.ms-TextField-field {
