@@ -774,7 +774,7 @@ async function getEmailContent() {
 // Generate content using Gemini API
 async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
   // Get model from settings or use default
-  let model = "gemini-2.0-flash-light";
+  let model = "gemini-2.0-flash-lite";
 
   if (modelOverride) {
     model = modelOverride;
@@ -1848,7 +1848,7 @@ function getFontSizeValue(size) {
  */
 function resetAllSettings() {
   // Reset model selection
-  document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
+  document.getElementById('dropdown-model').value = 'gemini-2.0-flash-lite';
 
   // Reset language selection
   document.getElementById('dropdown-language').value = 'ko';
@@ -2333,7 +2333,7 @@ function exportTemplatesAsMarkdown() {
 
     // Add model information
     markdownContent += `## General Settings\n\n`;
-    markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
+    markdownContent += `- **Model**: ${settings.model || 'gemini-2.0-flash-lite'}\n`;
     markdownContent += `- **Reply Model**: ${settings.replyModel || 'gemini-2.0-flash-lite'}\n`; // Add reply model
     markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
     markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
