@@ -4,6 +4,7 @@ const DEFAULT_ZAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4";
 const DEFAULT_ZAI_MODEL = "glm-5-turbo";
 const DEFAULT_ZAI_REPLY_MODEL = "glm-5-turbo";
 const MODEL_DISCOVERY_TIMEOUT_MS = 5000;
+const CHAT_COMPLETION_TIMEOUT_MS = 120000;
 const FALLBACK_ZAI_MODELS = Object.freeze([
   "glm-5-turbo",
   "glm-5.1",
@@ -157,6 +158,12 @@ async function fetchJson(url, options = {}, timeoutMs = MODEL_DISCOVERY_TIMEOUT_
     }
 
     return payload;
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(`Request timed out after ${Math.ceil(timeoutMs / 1000)} seconds.`);
+    }
+
+    throw error;
   } finally {
     timeout.clear();
   }
@@ -194,7 +201,7 @@ async function generateText(prompt, options = {}) {
         stream: false,
       }),
     },
-    options.timeoutMs
+    options.timeoutMs ?? CHAT_COMPLETION_TIMEOUT_MS
   );
 
   const content = normalizeTextContent(payload?.choices?.[0]?.message?.content);
