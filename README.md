@@ -48,8 +48,8 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
 - **Environment variable name:** `ZAI_API_KEY`
 - **Coding endpoint:** `https://api.z.ai/api/coding/paas/v4`
 - **General endpoint:** `https://api.z.ai/api/paas/v4`
-- **Recommended primary model:** `glm-5-turbo`
-- **Included fallback models:** `glm-5-turbo`, `glm-5.1`, `glm-5`, `glm-4.7`, `glm-4.7-flash`, `glm-4.7-flashx`, `glm-4.6`, `glm-4.5`, `glm-4.5-air`, `glm-4.5-x`, `glm-4.5-airx`, `glm-4.5-flash`, `glm-4-32b-0414-128k`
+- **Recommended primary model:** `glm-4.5-air`
+- **Included fallback models:** `glm-4.5-air`, `glm-4.5-flash`, `glm-4.7`, `glm-5.1`, `glm-5-turbo`, `glm-5`, `glm-4.7-flash`, `glm-4.7-flashx`, `glm-4.6`, `glm-4.5`, `glm-4.5-x`, `glm-4.5-airx`, `glm-4-32b-0414-128k`
 
 ### Obtain credentials
 
@@ -61,9 +61,9 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
 ### Endpoint and model guidance
 
 - Use the **coding endpoint** for GLM Coding Plan-compatible coding integrations.
-- Use `glm-5-turbo` as the default coding-oriented model.
+- Use `glm-4.5-air` as the default for the Outlook taskpane based on current latency benchmarks.
+- Use `glm-4.5-flash` when you want a short-response-first option.
 - Use `glm-5.1` when you want a heavier flagship option.
-- Use `glm-4.5-air` when you want a lighter, faster option.
 - Michael reads the API key and prompt/model settings from Outlook add-in saved settings.
 
 ### Dropdown refresh behavior

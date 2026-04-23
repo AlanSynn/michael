@@ -95,6 +95,12 @@
   >
     <header class="ms-welcome__header">
       <div class="header-brand">
+        <img
+          id="brand-logo"
+          src="../../assets/michael-black.png"
+          alt="Michael"
+          class="brand-logo-img"
+        />
         <span class="brand-name-text">Michael</span>
         <div id="dev-badge" class="dev-badge" style="display: none">DEV</div>
       </div>
@@ -141,7 +147,7 @@
       <!-- Landing screen - shown when no content is displayed -->
       <section id="landing-screen">
         <div class="landing-content">
-          <!-- Correct default src path -->
+          <p class="landing-eyebrow">Outlook copilot for real email work</p>
           <img
             id="landing-logo-main"
             src="../../assets/meet-michael-black.png"
@@ -149,25 +155,35 @@
             class="landing-logo"
           />
           <h2 class="landing-title">Read it for me, Michael</h2>
-          <p class="landing-description">Select an email and use the buttons above to:</p>
+          <p class="landing-description">
+            Summarize, translate, reply, and extract calendar details with your saved Z.AI setup.
+          </p>
+          <div class="landing-meta">
+            <span class="landing-meta-pill">Recommended default: glm-4.5-air</span>
+            <span class="landing-meta-pill">Prompt templates are fully editable</span>
+          </div>
           <div class="landing-features">
             <div class="feature-item">
               <i class="ms-Icon ms-Icon--EditNote" aria-hidden="true"></i>
-              <span>Summarize the email</span>
+              <span>Summarize mail into TL;DR, actions, and open questions</span>
             </div>
             <div class="feature-item">
               <i class="ms-Icon ms-Icon--Translate" aria-hidden="true"></i>
-              <span>Translate to your language</span>
+              <span>Translate threads into your working language</span>
             </div>
             <div class="feature-item">
               <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
-              <span>Translate & Summarize</span>
+              <span>Generate fast bilingual summaries when needed</span>
             </div>
             <div class="feature-item">
               <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
-              <span>Add to Calendar</span>
+              <span>Detect schedule details and draft calendar events</span>
             </div>
           </div>
+          <p class="landing-footnote">
+            Start with the actions in the top bar, or open <strong>Settings</strong> to change
+            model, prompts, and API key.
+          </p>
         </div>
       </section>
 

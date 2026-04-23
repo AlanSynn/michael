@@ -1,23 +1,23 @@
 /* global __ZAI_API_KEY__, __ZAI_CODING_BASE_URL__, AbortController, clearTimeout, fetch, setTimeout */
 
 const DEFAULT_ZAI_BASE_URL = "https://api.z.ai/api/coding/paas/v4";
-const DEFAULT_ZAI_MODEL = "glm-5-turbo";
-const DEFAULT_ZAI_REPLY_MODEL = "glm-5-turbo";
+const DEFAULT_ZAI_MODEL = "glm-4.5-air";
+const DEFAULT_ZAI_REPLY_MODEL = "glm-4.5-air";
 const MODEL_DISCOVERY_TIMEOUT_MS = 5000;
 const CHAT_COMPLETION_TIMEOUT_MS = 120000;
 const FALLBACK_ZAI_MODELS = Object.freeze([
-  "glm-5-turbo",
-  "glm-5.1",
-  "glm-5",
+  "glm-4.5-air",
+  "glm-4.5-flash",
   "glm-4.7",
+  "glm-5.1",
+  "glm-5-turbo",
+  "glm-5",
   "glm-4.7-flash",
   "glm-4.7-flashx",
   "glm-4.6",
   "glm-4.5",
-  "glm-4.5-air",
   "glm-4.5-x",
   "glm-4.5-airx",
-  "glm-4.5-flash",
   "glm-4-32b-0414-128k",
 ]);
 

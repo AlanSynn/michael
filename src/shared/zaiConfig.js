@@ -2,7 +2,7 @@
 
 const ZAI_CODING_BASE_URL = "https://api.z.ai/api/coding/paas/v4";
 const ZAI_CHAT_COMPLETIONS_URL = `${ZAI_CODING_BASE_URL}/chat/completions`;
-const ZAI_DEFAULT_MODEL = "glm-5-turbo";
+const ZAI_DEFAULT_MODEL = "glm-4.5-air";
 
 function getZaiApiKey() {
   if (typeof __ZAI_API_KEY__ !== "string") {

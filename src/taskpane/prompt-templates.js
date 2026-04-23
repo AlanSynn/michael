@@ -62,9 +62,9 @@ export const ZAI_PROVIDER_CONFIG = Object.freeze({
   apiKeyEnvVar: "ZAI_API_KEY",
   codingBaseUrl: "https://api.z.ai/api/coding/paas/v4",
   generalBaseUrl: "https://api.z.ai/api/paas/v4",
-  defaultModel: "glm-5-turbo",
-  replyModel: "glm-5-turbo",
-  modelSuggestions: Object.freeze(["glm-5-turbo", "glm-5.1", "glm-4.7"]),
+  defaultModel: "glm-4.5-air",
+  replyModel: "glm-4.5-air",
+  modelSuggestions: Object.freeze(["glm-4.5-air", "glm-4.5-flash", "glm-4.7"]),
 });
 
 export const PROVIDER_MESSAGES = Object.freeze({
