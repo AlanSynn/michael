@@ -3,30 +3,23 @@
  * See LICENSE in the project root for license information.
  */
 
-/* global Office */
+/* global Office, console, require */
 
-// Safety settings for Gemini API
-const safetySettings = [
-  {
-    category: "HARM_CATEGORY_HARASSMENT",
-    threshold: "BLOCK_NONE",
-  },
-  {
-    category: "HARM_CATEGORY_HATE_SPEECH",
-    threshold: "BLOCK_NONE",
-  },
-  {
-    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-    threshold: "BLOCK_NONE",
-  },
-  {
-    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-    threshold: "BLOCK_NONE",
-  },
-];
+const { ZAI_DEFAULT_MODEL } = require("../shared/zaiConfig");
+const { executeZaiChatCompletion } = require("../shared/zaiClient");
 
-// Fixed model for this command
-const MODEL_NAME = "gemini-2.0-flash-lite";
+const SETTINGS_KEY = "michael_settings";
+const COMMAND_TRANSLATE_TEMPLATE_FALLBACK = `
+Translate the email below into {language}.
+
+Requirements:
+- Return only the translated email body.
+- Preserve meaning, tone, names, dates, numbers, and paragraph structure.
+- Do not add a summary, bullets, or commentary.
+
+Subject: {subject}
+Content:
+{content}`;
 
 Office.onReady(() => {
   // Office is ready
@@ -34,186 +27,154 @@ Office.onReady(() => {
 
 /**
  * Handles the Add-in Command button click.
- * Translates the entire email body to Korean and replaces the current selection (or inserts at cursor).
+ * Translates the entire email body using the saved Outlook settings and inserts it at the cursor.
  * @param {Office.AddinCommands.Event} event The event object.
  */
 async function action(event) {
-  let apiKey = "";
-
-  // 1. Get API Key from Roaming Settings
-  try {
-    if (Office.context.roamingSettings) {
-      apiKey = Office.context.roamingSettings.get("apiKey");
-    } else {
-      throw new Error("RoamingSettings not available.");
-    }
-  } catch (error) {
-    console.error("Error accessing RoamingSettings:", error);
-    showErrorNotification(`Error accessing settings: ${error.message}`, event);
-    return;
-  }
-
+  const settings = getSavedSettings();
+  const apiKey = getSavedApiKey(settings);
   if (!apiKey) {
-    showErrorNotification("Please set up your Gemini API key in the ReadMeDarling taskpane settings first.", event);
+    showErrorNotification("Open Michael Settings and save a Z.AI API key first.", event);
     return;
   }
 
-  // 2. Show Processing Notification
-  showProcessingNotification("Translating email body to Korean...", event);
+  const model = getSavedModel(settings);
+  const template = getSavedCommandTranslateTemplate(settings);
+  const targetLanguage = getLanguageText(settings.defaultLanguage);
+
+  showProcessingNotification(`Translating email body to ${targetLanguage}...`, event);
 
   try {
-    // 3. Get Email Content
     const emailContent = await getEmailContent();
-    const subject = Office.context.mailbox.item.subject; // Subject might be useful context
+    const subject = Office.context.mailbox.item.subject;
+    const prompt = template
+      .replace("{subject}", subject)
+      .replace("{content}", emailContent)
+      .replace("{language}", targetLanguage);
+    const translatedBody = await generateContent(prompt, model, apiKey);
 
-    // 4. Prepare the Prompt for Full Translation
-    const prompt = `Translate the following email content entirely into Korean. Preserve the original meaning and tone as much as possible.
+    await replaceSelectionWithText(translatedBody);
 
-Email Subject (for context): ${subject}
-Email Content:
----
-${emailContent}
----
-
-Provide only the translated Korean text. Do not add any introductory or concluding remarks.`;
-
-    // 5. Generate Content using Gemini API
-    const translatedBody = await generateContent(prompt, apiKey, MODEL_NAME);
-
-    // 6. Replace the current selection (or insert at cursor) with the translation
-    await replaceSelectionWithText(translatedBody, event);
-
-    // 7. Show Success Notification
-    showSuccessNotification("Email body translated to Korean and replaced selection/inserted at cursor.", event);
-
+    showSuccessNotification(
+      `Email body translated to ${targetLanguage} and inserted at the cursor.`,
+      event
+    );
   } catch (error) {
     console.error("Error during translation command:", error);
     showErrorNotification(`Translation failed: ${error.message}`, event);
-    // Ensure event.completed is called even after error notification
-    event.completed();
   }
 }
 
-// --- Helper Functions ---
+Office.actions.associate("action", action);
 
-/**
- * Replaces the currently selected text in the email body with the provided text,
- * or inserts at the cursor if nothing is selected.
- * @param {string} textToInsert The text to insert/replace.
- * @param {Office.AddinCommands.Event} event The event object for completion.
- */
-async function replaceSelectionWithText(textToInsert, event) {
+async function replaceSelectionWithText(textToInsert) {
   return new Promise((resolve, reject) => {
     Office.context.mailbox.item.body.setSelectedDataAsync(
       textToInsert,
-      { coercionType: Office.CoercionType.Text, asyncContext: { event: event } },
+      { coercionType: Office.CoercionType.Text },
       (asyncResult) => {
         if (asyncResult.status === Office.AsyncResultStatus.Failed) {
           console.error("Failed to set selected data:", asyncResult.error);
           reject(new Error(`Failed to insert/replace text: ${asyncResult.error.message}`));
-        } else {
-          console.log("Selected data replaced/inserted successfully.");
-          resolve();
+          return;
         }
+
+        resolve();
       }
     );
   });
 }
 
-/**
- * Gets the email body content as plain text.
- * @returns {Promise<string>}
- */
 async function getEmailContent() {
   return new Promise((resolve, reject) => {
-    // IMPORTANT: Get the body as TEXT for translation, regardless of the original format.
-    Office.context.mailbox.item.body.getAsync(
-      Office.CoercionType.Text,
-      (result) => {
-        if (result.status === Office.AsyncResultStatus.Succeeded) {
-          resolve(result.value.trim()); // Trim whitespace
-        } else {
-          console.error("Failed to get email body as text:", result.error);
-          reject(new Error("Failed to get email content"));
-        }
+    Office.context.mailbox.item.body.getAsync(Office.CoercionType.Text, (result) => {
+      if (result.status === Office.AsyncResultStatus.Succeeded) {
+        resolve(result.value.trim());
+        return;
       }
-    );
+
+      console.error("Failed to get email body as text:", result.error);
+      reject(new Error("Failed to get email content."));
+    });
   });
 }
 
-/**
- * Generates content using the Gemini API.
- * @param {string} prompt The prompt for the API.
- * @param {string} apiKey The API key.
- * @param {string} modelName The Gemini model name.
- * @returns {Promise<string>} The generated text content.
- */
-async function generateContent(prompt, apiKey, modelName) {
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+async function generateContent(prompt, modelName, apiKey) {
+  const result = await executeZaiChatCompletion({
+    apiKey,
+    userPrompt: prompt,
+    model: modelName,
+    temperature: 0.3,
+  });
 
+  return result.text;
+}
+
+function getSavedSettings() {
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        safetySettings: safetySettings,
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 8192,
-        },
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || data.error) {
-      throw new Error(data.error?.message || `API Error (${response.status})`);
+    const rawValue = Office.context?.roamingSettings?.get(SETTINGS_KEY);
+    if (!rawValue || typeof rawValue !== "string") {
+      return {};
     }
 
-    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0]) {
-      return data.candidates[0].content.parts[0].text.trim();
-    } else if (data.candidates && data.candidates[0]?.finishReason === 'SAFETY') {
-      throw new Error("Content generation blocked due to safety settings.");
-    } else if (data.promptFeedback?.blockReason) {
-        throw new Error(`Prompt blocked due to safety settings: ${data.promptFeedback.blockReason}`);
-    } else {
-      console.warn("Unexpected API response structure:", data);
-      throw new Error("No content generated or unexpected format.");
-    }
+    const parsed = JSON.parse(rawValue);
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch (error) {
-    console.error("Error generating content via command:", error);
-    throw error; // Re-throw for handling in the action function
+    console.error("Failed to read saved Outlook settings:", error);
+    return {};
   }
 }
 
-// --- Notification Helpers ---
+function getSavedApiKey(settings) {
+  return typeof settings?.apiKey === "string" ? settings.apiKey.trim() : "";
+}
 
-function showProcessingNotification(message, event) {
-  Office.context.mailbox.item.notificationMessages.replaceAsync(
-    "ProcessingNotification",
-    {
-      type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
-      message: message,
-      icon: "Icon.80x80", // Make sure this icon is defined in your manifest resources
-      persistent: false,
-    },
-    (asyncResult) => {
-      if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-        console.error("Failed to show processing notification: ", asyncResult.error);
-      }
-    }
-  );
+function getSavedModel(settings) {
+  const configuredModel = typeof settings?.model === "string" ? settings.model.trim() : "";
+  return configuredModel || ZAI_DEFAULT_MODEL;
+}
+
+function getSavedCommandTranslateTemplate(settings) {
+  const configuredTemplate =
+    typeof settings?.templates?.commandTranslate === "string"
+      ? settings.templates.commandTranslate.trim()
+      : "";
+
+  if (!configuredTemplate) {
+    return COMMAND_TRANSLATE_TEMPLATE_FALLBACK.trim();
+  }
+
+  return configuredTemplate;
+}
+
+function getLanguageText(languageCode) {
+  switch (languageCode) {
+    case "es":
+      return "Spanish";
+    case "fr":
+      return "French";
+    case "de":
+      return "German";
+    case "it":
+      return "Italian";
+    case "ja":
+      return "Japanese";
+    case "ko":
+      return "Korean";
+    case "zh_cn":
+      return "Chinese";
+    default:
+      return "English";
+  }
+}
+
+function showProcessingNotification(message) {
+  Office.context.mailbox.item.notificationMessages.replaceAsync("ProcessingNotification", {
+    type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
+    message,
+    icon: "Icon.80x80",
+    persistent: false,
+  });
 }
 
 function showSuccessNotification(message, event) {
@@ -221,9 +182,9 @@ function showSuccessNotification(message, event) {
     "ActionCompleteNotification",
     {
       type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
-      message: message,
+      message,
       icon: "Icon.80x80",
-      persistent: true, // Keep success message visible
+      persistent: true,
     },
     (asyncResult) => {
       handleNotificationResult(asyncResult, event, "success");
@@ -236,7 +197,7 @@ function showErrorNotification(message, event) {
     "ActionErrorNotification",
     {
       type: Office.MailboxEnums.ItemNotificationMessageType.ErrorMessage,
-      message: message,
+      message,
       icon: "Icon.80x80",
       persistent: true,
     },
@@ -246,17 +207,10 @@ function showErrorNotification(message, event) {
   );
 }
 
-// Common handler for notification results; crucial for calling event.completed
 function handleNotificationResult(asyncResult, event, type) {
   if (asyncResult.status === Office.AsyncResultStatus.Failed) {
     console.error(`Failed to show ${type} notification: `, asyncResult.error);
   }
-  // Ensure event.completed() is called AFTER the notification attempt, regardless of success/failure
-  // except when the error handler already called it.
-  if (type !== 'error') { // Avoid double completion if error handler already called it
-      event.completed();
-  }
-}
 
-// Register the function with Office.
-Office.actions.associate("action", action);
+  event.completed();
+}

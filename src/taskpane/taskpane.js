@@ -3,152 +3,134 @@
  * See LICENSE in the project root for license information.
  */
 
-/* global document, Office, marked */
+/* global Blob, console, document, localStorage, marked, navigator, Office, sessionStorage, setTimeout, URL, window */
 
-// Safety settings for Gemini API
-const safetySettings = [{
-    category: "HARM_CATEGORY_HARASSMENT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_HATE_SPEECH",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-    threshold: "BLOCK_NONE"
-  },
-  {
-    category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-    threshold: "BLOCK_NONE"
-  }
-];
+import { fetchAvailableModels, generateText, getDefaultZaiModels } from "../shared/zai";
+import {
+  createBlankPromptTemplates,
+  createBlankSettings,
+  createDefaultPromptTemplates,
+  DEFAULT_SETTINGS,
+  PROVIDER_MESSAGES,
+  TEMPLATE_KEYS,
+} from "./prompt-templates";
 
 const TYPES = {
   SUMMARIZE: 0,
   TRANSLATE: 1,
   TRANSLATE_SUMMARIZE: 2,
   REPLY: 3,
-  CALENDAR: 4
+  CALENDAR: 4,
 };
 
-// Default templates
-const DEFAULT_TEMPLATES = {
-  summarize: `You are an expert researcher. Your task is to review the provided research document and complete the following tasks with academic depth and varied sentence structures:
+const MODEL_CATALOG_CACHE_KEY = "michael_zai_model_catalog";
+const TEMPLATE_DEFAULTS_KEY = "michael_template_defaults";
+const SETTINGS_KEY = "michael_settings";
+let availableModelCatalog = getDefaultZaiModels();
 
-1. Summarize the Research Background:
-   - Provide a concise yet comprehensive summary of the study's background, including its context and motivation.
+const PROMPT_FIELD_MAP = Object.freeze({
+  summarize: "dropdown-summarize-template",
+  translate: "dropdown-translate-template",
+  translateSummarize: "dropdown-translate-summarize-template",
+  reply: "dropdown-reply-template",
+  commandTranslate: "dropdown-command-translate-template",
+  tldrPrompt: "dropdown-tldr-template",
+  calendarParse: "dropdown-calendar-parse-template",
+  calendarCheck: "dropdown-calendar-check-template",
+});
 
-2. Extract the Problem Statement:
-   - Clearly identify and articulate the central problem or challenge addressed by the research.
+function getRoamingStore() {
+  return Office?.context?.roamingSettings || null;
+}
 
-3. Identify Strengths:
-   - List 3–5 key strengths of the study, focusing on aspects such as methodology, innovation, robustness of results, or any other notable positive attributes.
+function saveRoamingStoreAsync() {
+  const store = getRoamingStore();
+  if (!store) {
+    return Promise.resolve();
+  }
 
-4. Identify Weaknesses:
-   - Enumerate 4–5 significant weaknesses or limitations present in the research, considering issues like methodological gaps, limited scope, or areas lacking clarity.
+  return new Promise((resolve, reject) => {
+    store.saveAsync((result) => {
+      if (result.status === Office.AsyncResultStatus.Failed) {
+        reject(new Error(result.error?.message || "Failed to save Outlook add-in settings."));
+        return;
+      }
 
-5. Propose Research Topics:
-   - Based on the weaknesses identified, suggest three potential research topics that could address these limitations or explore related areas further.
+      resolve();
+    });
+  });
+}
 
-6. Include a "tl;dr" Section:
-   - At the very top of your response, provide a succinct "tl;dr" summary without any syntax highlighting that encapsulates the main points and any necessary takeaways.
+const roamingStorage = Object.freeze({
+  getItem(key) {
+    try {
+      const store = getRoamingStore();
+      const value = store ? store.get(key) : null;
+      return typeof value === "string" ? value : null;
+    } catch (error) {
+      console.error(`Error reading Outlook add-in setting ${key}:`, error);
+      return null;
+    }
+  },
+  setItem(key, value) {
+    try {
+      const store = getRoamingStore();
+      if (!store) {
+        return;
+      }
 
-Do not include any extraneous messages, introductions, or commentary. Your final output should strictly adhere to these instructions.
+      store.set(key, value);
+    } catch (error) {
+      console.error(`Error writing Outlook add-in setting ${key}:`, error);
+    }
+  },
+  removeItem(key) {
+    try {
+      const store = getRoamingStore();
+      if (!store) {
+        return;
+      }
 
-Subject: {subject}
-Content:
-{content}`,
-  translate: `You are an expert translator and interpreter with extensive proficiency in various languages, specializing in translating texts into polished, academic Korean. Your task is to translate the provided text from the source language into Korean, ensuring that every nuance, stylistic detail, and analytical aspect is accurately and naturally conveyed. Please follow these guidelines:
-
-Preserve Nuance and Style:
-- Accurately reflect the original text's tone, emotional nuance, and stylistic characteristics in Korean.
-- Adapt idiomatic expressions, metaphors, and culturally specific references to ensure they resonate with Korean readers.
-
-Maintain Analytical Precision:
-- Carefully dissect complex sentences and ideas, ensuring that your translation maintains the original text's logical flow and depth of analysis.
-- Where necessary, integrate brief annotations or contextual clarifications to help convey any cultural or conceptual subtleties.
-
-Ensure Accuracy and Consistency:
-- Translate specialized vocabulary, technical terms, and academic language with precision and maintain consistency throughout the text.
-- Verify that the structure and argumentative progression of the source material are preserved in the Korean version.
-
-Uphold Contextual Integrity:
-- Ensure that the overall message and intent of the original text are fully maintained in your translation.
-- Make sure that transitions between ideas and sections remain coherent and logically connected in Korean.
-
-Review and Refine:
-- Reassess your translation for any potential ambiguities or loss of nuance, refining as necessary to enhance clarity and precision.
-- Strive for a balanced outcome that honors the original text while ensuring the translation is engaging and accessible to a Korean audience.
-
-Provide tl;dr at the top:
-Write a tl;dr section at the top of your response that summarizes the main points and todos if needed.
-
-Deliver your final translation in refined, academic Korean that faithfully embodies the original text's analytical and stylistic essence.
-
-Subject: {subject}
-
-Content:
-{content}`,
-  translateSummarize: `You are an expert translator and summarizer with extensive proficiency in various languages, specializing in translating texts into polished, academic Korean. Your task is to translate the provided text from the source language into Korean AND create a concise summary of the main points. Please follow these guidelines:
-
-Translation Aspects:
-- Accurately reflect the original text's tone, emotional nuance, and stylistic characteristics in Korean.
-- Adapt idiomatic expressions, metaphors, and culturally specific references to ensure they resonate with Korean readers.
-- Maintain analytical precision and logical flow in the Korean translation.
-
-Summarization Requirements:
-- Create a concise and focused summary of the key points in Korean.
-- Prioritize clarity and brevity while maintaining the essential meaning.
-- Ensure the summary captures the main ideas, arguments, and conclusions.
-- Limit the summary to approximately 30-40% of the original length.
-
-Final Delivery Format:
-1. First provide tl;dr at the top:
-Write a tl;dr section at the top of your response that summarizes the main points and todos if needed.
-2. Then provide a concise summary section (제목: 요약)
-3. Then provide the full translation (제목: 전체 번역)
-
-Subject: {subject}
-
-Content:
-{content}`,
-  reply: `You are an expert assistant that can help me with my email. I will provide you with the email content and you will help me with the following tasks:
-
-  Write a reply to the email.
-
-  Subject: {subject}
-
-  Content:
-  {content}
-  in {language}`,
-  tldrPrompt: `Please provide a very concise summary in {language} of the following content. Focus on the main points and key takeaways. Do not include any extraneous messages, introductions, or commentary. Your final output should strictly adhere to these instructions.
-
-  Subject: {subject}
-
-  Content:
-  {content}`
-};
+      store.remove(key);
+    } catch (error) {
+      console.error(`Error removing Outlook add-in setting ${key}:`, error);
+    }
+  },
+});
 
 /**
- * Migrate legacy localStorage keys to unified 'michael_*' keys
+ * Migrate legacy browser storage keys into Outlook add-in settings.
  */
 function migrateSettingsKeys() {
   try {
-    const legacySettings = localStorage.getItem('my_sidekick_michael_settings');
-    const currentSettings = localStorage.getItem('michael_settings');
+    const legacySettings = sessionStorage.getItem("my_sidekick_michael_settings");
+    const currentSettings = roamingStorage.getItem(SETTINGS_KEY);
     if (!currentSettings && legacySettings) {
-      localStorage.setItem('michael_settings', legacySettings);
+      roamingStorage.setItem(SETTINGS_KEY, legacySettings);
     }
-    localStorage.removeItem('my_sidekick_michael_settings');
+    sessionStorage.removeItem("my_sidekick_michael_settings");
 
-    const legacyApiKey = localStorage.getItem('my_sidekick_michael_api_key');
-    const currentApiKey = localStorage.getItem('michael_api_key');
-    if (!currentApiKey && legacyApiKey) {
-      localStorage.setItem('michael_api_key', legacyApiKey);
+    const previousLocalSettings = localStorage.getItem("michael_settings");
+    if (!currentSettings && previousLocalSettings) {
+      roamingStorage.setItem(SETTINGS_KEY, previousLocalSettings);
     }
-    localStorage.removeItem('my_sidekick_michael_api_key');
-  } catch (e) {
+
+    const legacyTemplateDefaults = sessionStorage.getItem("michael_session_template_defaults");
+    const currentTemplateDefaults = roamingStorage.getItem(TEMPLATE_DEFAULTS_KEY);
+    if (!currentTemplateDefaults && legacyTemplateDefaults) {
+      roamingStorage.setItem(TEMPLATE_DEFAULTS_KEY, legacyTemplateDefaults);
+    }
+
+    const legacyModelCatalog = sessionStorage.getItem(MODEL_CATALOG_CACHE_KEY);
+    const currentModelCatalog = roamingStorage.getItem(MODEL_CATALOG_CACHE_KEY);
+    if (!currentModelCatalog && legacyModelCatalog) {
+      roamingStorage.setItem(MODEL_CATALOG_CACHE_KEY, legacyModelCatalog);
+    }
+
+    saveRoamingStoreAsync().catch((error) => {
+      console.error("Error saving migrated Outlook add-in settings:", error);
+    });
+  } catch {
     // no-op
   }
 }
@@ -170,6 +152,7 @@ function toggleSettingsView() {
       appBody.style.display = "none"; // Hide main content
       // Optional: Load settings when view is opened
       loadDropdownSettings();
+      refreshModelCatalog({ silent: true });
       // Activate the first tab by default if needed, handled by initTabs
     }
   }
@@ -184,14 +167,14 @@ function initializeSettingsTabs() {
 
   if (!tabButtons.length || !tabContents.length) return;
 
-  tabButtons.forEach(button => {
+  tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
       // Get target tab content ID from button's data attribute
       const targetTabId = button.getAttribute("data-tab");
 
       // Deactivate all buttons and contents
-      tabButtons.forEach(btn => btn.classList.remove("active"));
-      tabContents.forEach(content => content.classList.remove("active"));
+      tabButtons.forEach((btn) => btn.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"));
 
       // Activate the clicked button and corresponding content
       button.classList.add("active");
@@ -209,12 +192,182 @@ function initializeSettingsTabs() {
   const firstTabContentId = firstTabButton?.getAttribute("data-tab");
   const firstTabContent = document.getElementById(firstTabContentId);
 
-  tabButtons.forEach(btn => btn.classList.remove("active"));
-  tabContents.forEach(content => content.classList.remove("active"));
+  tabButtons.forEach((btn) => btn.classList.remove("active"));
+  tabContents.forEach((content) => content.classList.remove("active"));
 
   if (firstTabButton && firstTabContent) {
     firstTabButton.classList.add("active");
     firstTabContent.classList.add("active");
+  }
+}
+
+function readJsonStorage(key, fallbackValue) {
+  try {
+    const rawValue = roamingStorage.getItem(key);
+    return rawValue ? JSON.parse(rawValue) : fallbackValue;
+  } catch (error) {
+    console.error(`Error reading ${key}:`, error);
+    return fallbackValue;
+  }
+}
+
+function writeJsonStorage(key, value) {
+  roamingStorage.setItem(key, JSON.stringify(value));
+}
+
+function getSettings() {
+  return readJsonStorage(SETTINGS_KEY, createBlankSettings());
+}
+
+function saveSettingsToStore(settings) {
+  writeJsonStorage(SETTINGS_KEY, settings);
+}
+
+function getSavedTemplateDefaults() {
+  return readJsonStorage(TEMPLATE_DEFAULTS_KEY, createBlankPromptTemplates());
+}
+
+function saveTemplateDefaults(templates) {
+  writeJsonStorage(TEMPLATE_DEFAULTS_KEY, templates);
+}
+
+function getPromptFieldValue(templateKey) {
+  const fieldId = PROMPT_FIELD_MAP[templateKey];
+  const field = fieldId ? document.getElementById(fieldId) : null;
+  return field ? field.value : "";
+}
+
+function setPromptFieldValue(templateKey, value) {
+  const fieldId = PROMPT_FIELD_MAP[templateKey];
+  const field = fieldId ? document.getElementById(fieldId) : null;
+  if (field) {
+    field.value = value || "";
+  }
+}
+
+function collectPromptTemplatesFromForm() {
+  return TEMPLATE_KEYS.reduce((templates, key) => {
+    templates[key] = getPromptFieldValue(key);
+    return templates;
+  }, {});
+}
+
+function applyPromptTemplatesToForm(templates) {
+  TEMPLATE_KEYS.forEach((key) => {
+    setPromptFieldValue(key, templates[key] || "");
+  });
+}
+
+function getCachedModelCatalog() {
+  const cachedModels = readJsonStorage(MODEL_CATALOG_CACHE_KEY, []);
+  return Array.isArray(cachedModels) && cachedModels.length ? cachedModels : getDefaultZaiModels();
+}
+
+function persistModelCatalog(models) {
+  availableModelCatalog =
+    Array.isArray(models) && models.length ? [...models] : getDefaultZaiModels();
+  roamingStorage.setItem(MODEL_CATALOG_CACHE_KEY, JSON.stringify(availableModelCatalog));
+  saveRoamingStoreAsync().catch((error) => {
+    console.error("Error saving model catalog:", error);
+  });
+}
+
+function setSettingsStatus(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.textContent = message;
+  }
+}
+
+function updateAuthenticationStatus() {
+  if (getApiKey()) {
+    setSettingsStatus(
+      "dropdown-auth-status",
+      "Authentication source: saved Outlook add-in settings."
+    );
+    return;
+  }
+
+  setSettingsStatus(
+    "dropdown-auth-status",
+    "Authentication source: empty. Enter the API key in this screen and save settings."
+  );
+}
+
+function getMissingApiKeyMessage() {
+  return PROVIDER_MESSAGES.missingApiKey;
+}
+
+function updateModelSelectOptions(selectId, models, selectedValue) {
+  const select = document.getElementById(selectId);
+  if (!select) {
+    return;
+  }
+
+  const catalog = Array.isArray(models) && models.length ? models : getDefaultZaiModels();
+  const normalizedSelection = typeof selectedValue === "string" ? selectedValue.trim() : "";
+  const nextValue =
+    normalizedSelection && catalog.includes(normalizedSelection) ? normalizedSelection : "";
+
+  select.innerHTML = "";
+  const placeholderOption = document.createElement("option");
+  placeholderOption.value = "";
+  placeholderOption.textContent = "Select a model";
+  select.appendChild(placeholderOption);
+  catalog.forEach((modelName) => {
+    const option = document.createElement("option");
+    option.value = modelName;
+    option.textContent = modelName;
+    select.appendChild(option);
+  });
+
+  select.value = nextValue || "";
+}
+
+function syncModelDropdowns() {
+  const settings = getSettings();
+  const models = availableModelCatalog.length ? availableModelCatalog : getCachedModelCatalog();
+
+  updateModelSelectOptions("dropdown-model", models, settings.model || "");
+  updateModelSelectOptions("dropdown-reply-model", models, settings.replyModel || "");
+}
+
+async function refreshModelCatalog(options = {}) {
+  const silent = options.silent === true;
+  const apiKey = getApiKey();
+
+  updateAuthenticationStatus();
+
+  if (!apiKey) {
+    availableModelCatalog = getCachedModelCatalog();
+    syncModelDropdowns();
+    setSettingsStatus(
+      "dropdown-model-status",
+      "Using cached/fallback Z.AI models. Enter an API key in Settings > General to enable live refresh."
+    );
+    return availableModelCatalog;
+  }
+
+  setSettingsStatus("dropdown-model-status", "Refreshing available Z.AI models...");
+
+  try {
+    const liveModels = await fetchAvailableModels({ apiKey });
+    persistModelCatalog(liveModels);
+    syncModelDropdowns();
+    setSettingsStatus("dropdown-model-status", `Loaded ${liveModels.length} models from Z.AI.`);
+    return availableModelCatalog;
+  } catch (error) {
+    console.error("Error refreshing Z.AI model catalog:", error);
+    availableModelCatalog = getCachedModelCatalog();
+    syncModelDropdowns();
+    setSettingsStatus(
+      "dropdown-model-status",
+      `Live refresh failed. Using cached/fallback models (${error.message}).`
+    );
+    if (!silent) {
+      showNotification(`Model refresh failed: ${error.message}`, "warning");
+    }
+    return availableModelCatalog;
   }
 }
 
@@ -231,29 +384,26 @@ Office.onReady((info) => {
     let autorunEnabled = false;
     let selectedOption = null;
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        autorunEnabled = settings.autorun === 'true';
-        selectedOption = settings.autorunOption;
-      }
+      const settings = getSettings();
+      autorunEnabled = settings.autorun === "true";
+      selectedOption = settings.autorunOption;
     } catch (error) {
-      console.error('Error getting autorun settings:', error);
+      console.error("Error getting autorun settings:", error);
     }
 
     // If autorun is enabled and an option is selected, execute it
     if (autorunEnabled && selectedOption) {
       switch (selectedOption) {
-        case 'summarize':
+        case "summarize":
           summarizeEmail();
           break;
-        case 'translate':
+        case "translate":
           translateEmail();
           break;
-        case 'translateAndSummarize':
+        case "translateAndSummarize":
           translateAndSummarizeEmail();
           break;
-        case 'reply':
+        case "reply":
           generateReply();
           break;
       }
@@ -262,41 +412,56 @@ Office.onReady((info) => {
     // Add event listeners for the application buttons
     document.getElementById("summarize").addEventListener("click", summarizeEmail);
     document.getElementById("translate").addEventListener("click", translateEmail);
-    document.getElementById("translate-summarize").addEventListener("click", translateAndSummarizeEmail);
+    document
+      .getElementById("translate-summarize")
+      .addEventListener("click", translateAndSummarizeEmail);
     document.getElementById("calendar-event").addEventListener("click", handleCalendarEvent);
     document.getElementById("settings-toggle").addEventListener("click", toggleSettingsView); // Updated listener
     document.getElementById("close-settings-view").addEventListener("click", toggleSettingsView); // Listener for new close button
-    document.getElementById("dropdown-save-settings").addEventListener("click", saveDropdownSettings);
+    document
+      .getElementById("dropdown-save-settings")
+      .addEventListener("click", saveDropdownSettings);
     document.getElementById("dropdown-reset-all").addEventListener("click", resetAllSettings);
     // Note: Template specific buttons are now inside the template tab HTML
     const resetTemplatesBtn = document.getElementById("dropdown-reset-templates");
     if (resetTemplatesBtn) {
-      resetTemplatesBtn.addEventListener("click", resetTemplates); // Listener for new reset templates button
+      resetTemplatesBtn.addEventListener("click", resetTemplates);
+    }
+    const loadBuiltInsBtn = document.getElementById("dropdown-load-builtins");
+    if (loadBuiltInsBtn) {
+      loadBuiltInsBtn.addEventListener("click", loadBuiltInTemplateDefaults);
+    }
+    const saveTemplateDefaultsBtn = document.getElementById("dropdown-save-template-defaults");
+    if (saveTemplateDefaultsBtn) {
+      saveTemplateDefaultsBtn.addEventListener("click", saveCurrentTemplatesAsDefaults);
+    }
+    const clearTemplatesBtn = document.getElementById("dropdown-clear-templates");
+    if (clearTemplatesBtn) {
+      clearTemplatesBtn.addEventListener("click", clearTemplates);
     }
     const copyTemplatesBtn = document.getElementById("dropdown-copy-templates");
     if (copyTemplatesBtn) {
-      // Add copy logic if needed, currently uses markdown export ID?
-      // copyTemplatesBtn.addEventListener("click", copyAllTemplatesFunction);
+      copyTemplatesBtn.addEventListener("click", copyAllTemplatesToClipboard);
     }
     const exportMarkdownBtn = document.getElementById("dropdown-export-markdown");
     if (exportMarkdownBtn) {
       exportMarkdownBtn.addEventListener("click", exportTemplatesAsMarkdown);
     }
-    document.getElementById("dropdown-api-key").addEventListener("keypress", (event) => {
-      if (event.key === "Enter") {
-        saveDropdownSettings();
-      }
-    });
+    const refreshModelsBtn = document.getElementById("dropdown-refresh-models");
+    if (refreshModelsBtn) {
+      refreshModelsBtn.addEventListener("click", () => {
+        refreshModelCatalog();
+      });
+    }
+    const apiKeyInput = document.getElementById("dropdown-api-key");
+    if (apiKeyInput) {
+      apiKeyInput.addEventListener("input", updateAuthenticationStatus);
+    }
 
     // Add dev mode toggle listener
     document.getElementById("dropdown-dev-mode").addEventListener("change", function () {
       const devServerGroup = document.getElementById("dev-server-group");
       devServerGroup.style.display = this.value === "true" ? "block" : "none";
-    });
-
-    // Settings selection change listeners
-    document.querySelectorAll(".settings-dropdown-container select").forEach(select => {
-      select.addEventListener("change", saveDropdownSettings);
     });
 
     // Expand button listener
@@ -311,49 +476,45 @@ Office.onReady((info) => {
 
     // Load saved settings if any
     loadDropdownSettings();
+    updateAuthenticationStatus();
+    refreshModelCatalog({ silent: true });
 
     // Apply current theme
     applyCurrentTheme();
 
     // Register for theme change events
     if (Office.context.mailbox.addHandlerAsync) {
-      Office.context.mailbox.addHandlerAsync(
-        Office.EventType.SettingsChanged,
-        onSettingsChanged
-      );
+      Office.context.mailbox.addHandlerAsync(Office.EventType.SettingsChanged, onSettingsChanged);
     }
 
     // Add event handler for email selection
     Office.context.mailbox.addHandlerAsync(
       Office.EventType.ItemChanged,
-      function (args) {
+      function () {
         // Check if autorun is enabled and get the selected option
         let autorunEnabled = false;
         let selectedOption = null;
         try {
-          const savedSettings = localStorage.getItem('michael_settings');
-          if (savedSettings) {
-            const settings = JSON.parse(savedSettings);
-            autorunEnabled = settings.autorun === 'true';
-            selectedOption = settings.autorunOption;
-          }
+          const settings = getSettings();
+          autorunEnabled = settings.autorun === "true";
+          selectedOption = settings.autorunOption;
         } catch (error) {
-          console.error('Error getting autorun settings:', error);
+          console.error("Error getting autorun settings:", error);
         }
 
         // If autorun is enabled and an option is selected, execute it
         if (autorunEnabled && selectedOption) {
           switch (selectedOption) {
-            case 'summarize':
+            case "summarize":
               summarizeEmail();
               break;
-            case 'translate':
+            case "translate":
               translateEmail();
               break;
-            case 'translateAndSummarize':
+            case "translateAndSummarize":
               translateAndSummarizeEmail();
               break;
-            case 'reply':
+            case "reply":
               generateReply();
               break;
           }
@@ -363,34 +524,31 @@ Office.onReady((info) => {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           result.value.addHandlerAsync(
             Office.EventType.ItemChanged,
-            function (args) {
+            function () {
               // Check if autorun is enabled and get the selected option
               let autorunEnabled = false;
               let selectedOption = null;
               try {
-                const savedSettings = localStorage.getItem('michael_settings');
-                if (savedSettings) {
-                  const settings = JSON.parse(savedSettings);
-                  autorunEnabled = settings.autorun === 'true';
-                  selectedOption = settings.autorunOption;
-                }
+                const settings = getSettings();
+                autorunEnabled = settings.autorun === "true";
+                selectedOption = settings.autorunOption;
               } catch (error) {
-                console.error('Error getting autorun settings:', error);
+                console.error("Error getting autorun settings:", error);
               }
 
               // If autorun is enabled and an option is selected, execute it
               if (autorunEnabled && selectedOption) {
                 switch (selectedOption) {
-                  case 'summarize':
+                  case "summarize":
                     summarizeEmail();
                     break;
-                  case 'translate':
+                  case "translate":
                     translateEmail();
                     break;
-                  case 'translateAndSummarize':
+                  case "translateAndSummarize":
                     translateAndSummarizeEmail();
                     break;
-                  case 'reply':
+                  case "reply":
                     generateReply();
                     break;
                 }
@@ -409,17 +567,14 @@ Office.onReady((info) => {
     // Update calendar button state when email changes
     Office.context.mailbox.addHandlerAsync(
       Office.EventType.ItemChanged,
-      function (args) {
+      function () {
         updateCalendarButtonState();
       },
       function (result) {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
-          result.value.addHandlerAsync(
-            Office.EventType.ItemChanged,
-            function (args) {
-              updateCalendarButtonState();
-            }
-          );
+          result.value.addHandlerAsync(Office.EventType.ItemChanged, function () {
+            updateCalendarButtonState();
+          });
         }
       }
     );
@@ -437,14 +592,14 @@ Office.onReady((info) => {
  */
 function applyCurrentTheme() {
   // Default to dark theme instead of system
-  const savedTheme = localStorage.getItem('theme') || 'dark';
+  const savedTheme = getSettings().theme || "dark";
 
-  if (savedTheme === 'light') {
-    document.body.setAttribute('data-theme', 'light');
-    document.body.classList.remove('dark-theme');
-  } else if (savedTheme === 'dark') {
-    document.body.setAttribute('data-theme', 'dark');
-    document.body.classList.add('dark-theme');
+  if (savedTheme === "light") {
+    document.body.setAttribute("data-theme", "light");
+    document.body.classList.remove("dark-theme");
+  } else if (savedTheme === "dark") {
+    document.body.setAttribute("data-theme", "dark");
+    document.body.classList.add("dark-theme");
   } else {
     // Use Office theme
     if (Office.context.officeTheme) {
@@ -452,39 +607,45 @@ function applyCurrentTheme() {
       // Only call isDarkTheme if bodyBackgroundColor exists
       if (bodyBackgroundColor) {
         if (isDarkTheme(bodyBackgroundColor)) {
-          document.body.setAttribute('data-theme', 'dark');
-          document.body.classList.add('dark-theme');
+          document.body.setAttribute("data-theme", "dark");
+          document.body.classList.add("dark-theme");
         } else {
-          document.body.setAttribute('data-theme', 'light');
-          document.body.classList.remove('dark-theme');
+          document.body.setAttribute("data-theme", "light");
+          document.body.classList.remove("dark-theme");
         }
       } else {
         // Default to dark theme if no color information
-        document.body.setAttribute('data-theme', 'dark');
-        document.body.classList.add('dark-theme');
+        document.body.setAttribute("data-theme", "dark");
+        document.body.classList.add("dark-theme");
       }
     }
   }
 
   // ----- Logo Switching Logic Start -----
-  const sideloadLogo = document.getElementById('sideload-logo');
-  const landingLogo = document.getElementById('landing-logo-main');
-  const brandLogo = document.getElementById('brand-logo'); // Get new brand logo
-  const currentThemeIsDark = document.body.classList.contains('dark-theme');
+  const sideloadLogo = document.getElementById("sideload-logo");
+  const landingLogo = document.getElementById("landing-logo-main");
+  const brandLogo = document.getElementById("brand-logo"); // Get new brand logo
+  const currentThemeIsDark = document.body.classList.contains("dark-theme");
 
   // Set sideload logo (White on Dark, Black on Light)
   if (sideloadLogo) {
-    sideloadLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    sideloadLogo.src = currentThemeIsDark
+      ? "../../assets/meet-michael-white.png"
+      : "../../assets/meet-michael-black.png";
   }
 
   // Set landing page logo (White on Dark, Black on Light - Corrected)
   if (landingLogo) {
-    landingLogo.src = currentThemeIsDark ? '../../assets/meet-michael-white.png' : '../../assets/meet-michael-black.png';
+    landingLogo.src = currentThemeIsDark
+      ? "../../assets/meet-michael-white.png"
+      : "../../assets/meet-michael-black.png";
   }
 
   // Set brand logo (White on Dark, Black on Light)
   if (brandLogo) {
-    brandLogo.src = currentThemeIsDark ? '../../assets/michael-white.png' : '../../assets/michael-black.png';
+    brandLogo.src = currentThemeIsDark
+      ? "../../assets/michael-white.png"
+      : "../../assets/michael-black.png";
   }
   // ----- Logo Switching Logic End -----
 }
@@ -496,13 +657,13 @@ function applyCurrentTheme() {
  */
 function isDarkTheme(color) {
   // If color is undefined or not a string, default to light theme
-  if (!color || typeof color !== 'string') {
+  if (!color || typeof color !== "string") {
     return false;
   }
 
   try {
     // Convert hex to RGB
-    color = color.replace('#', '');
+    color = color.replace("#", "");
     const r = parseInt(color.substr(0, 2), 16);
     const g = parseInt(color.substr(2, 2), 16);
     const b = parseInt(color.substr(4, 2), 16);
@@ -513,7 +674,7 @@ function isDarkTheme(color) {
     }
 
     // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
-    const brightness = (0.299 * r + 0.587 * g + 0.114 * b);
+    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
 
     // If brightness is less than 128, consider it dark
     return brightness < 128;
@@ -526,9 +687,9 @@ function isDarkTheme(color) {
 /**
  * Handle Office theme change event
  */
-function onSettingsChanged(eventArgs) {
-  const savedTheme = localStorage.getItem('theme') || 'system';
-  if (savedTheme === 'system') {
+function onSettingsChanged() {
+  const savedTheme = getSettings().theme || "system";
+  if (savedTheme === "system") {
     applyCurrentTheme();
   }
 }
@@ -573,110 +734,138 @@ function showNotification(message, type = "info") {
 /**
  * Save settings from the dropdown menu
  */
-function saveDropdownSettings() {
-  // Get existing settings
-  let settings = {};
+async function saveDropdownSettings() {
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      settings = JSON.parse(savedSettings);
-    }
+    const settings = getSettings();
+
+    // Update with values from dropdown form
+    const apiKey = document.getElementById("dropdown-api-key").value.trim();
+    const model = document.getElementById("dropdown-model").value;
+    const language = document.getElementById("dropdown-language").value;
+    const eventTitleLanguage = document.getElementById("dropdown-event-title-language").value;
+    const theme = document.getElementById("dropdown-theme").value;
+    const fontSize = document.getElementById("dropdown-font-size").value;
+    const tldrMode = document.getElementById("dropdown-tldr-mode").value;
+    const showReply = document.getElementById("dropdown-show-reply").value;
+    const replyModel = document.getElementById("dropdown-reply-model")
+      ? document.getElementById("dropdown-reply-model").value
+      : undefined;
+    const autorun = document.getElementById("dropdown-autorun").value;
+    const autorunOption = document.getElementById("dropdown-autorun-option").value;
+    const devMode = document.getElementById("dropdown-dev-mode").value;
+    const devServer = document.getElementById("dropdown-dev-server").value;
+    const templates = collectPromptTemplatesFromForm();
+
+    // Update settings object
+    settings.apiKey = apiKey;
+    settings.model = model;
+    settings.defaultLanguage = language;
+    settings.eventTitleLanguage = eventTitleLanguage;
+    settings.theme = theme;
+    settings.fontSize = fontSize;
+    settings.tldrMode = tldrMode;
+    settings.showReply = showReply;
+    settings.replyModel = replyModel || "";
+    settings.autorun = autorun;
+    settings.autorunOption = autorunOption;
+    settings.devMode = devMode;
+    settings.devServer = devServer;
+    settings.templates = {
+      ...createBlankPromptTemplates(),
+      ...templates,
+    };
+
+    saveSettingsToStore(settings);
+    roamingStorage.setItem("theme", theme);
+    await saveRoamingStoreAsync();
+
+    applyCurrentTheme();
+    applyFontSize(fontSize);
+    updateReplyButtonVisibility(showReply === "true");
+    updateDevBadges(devMode === "true");
+    updateAuthenticationStatus();
+
+    showNotification("All settings saved successfully");
+    toggleSettingsView();
   } catch (error) {
-    console.error('Error parsing settings:', error);
+    console.error("Error saving Outlook settings:", error);
+    showNotification(`Failed to save settings: ${error.message}`, "error");
   }
-
-  // Update with values from dropdown form
-  const apiKey = document.getElementById('dropdown-api-key').value;
-  // Get model from input field
-  const model = document.getElementById('dropdown-model').value;
-  const language = document.getElementById('dropdown-language').value;
-  const eventTitleLanguage = document.getElementById('dropdown-event-title-language').value;
-  const theme = document.getElementById('dropdown-theme').value;
-  const fontSize = document.getElementById('dropdown-font-size').value;
-  const tldrMode = document.getElementById('dropdown-tldr-mode').value;
-  const showReply = document.getElementById('dropdown-show-reply').value;
-  // Get reply template
-  const replyTemplate = document.getElementById('dropdown-reply-template').value;
-  const replyModel = document.getElementById('dropdown-reply-model') ? document.getElementById('dropdown-reply-model').value : undefined;
-  const autorun = document.getElementById('dropdown-autorun').value;
-  const autorunOption = document.getElementById('dropdown-autorun-option').value;
-  const devMode = document.getElementById('dropdown-dev-mode').value;
-  const devServer = document.getElementById('dropdown-dev-server').value;
-  const summarizeTemplate = document.getElementById('dropdown-summarize-template').value;
-  const translateTemplate = document.getElementById('dropdown-translate-template').value;
-  const translateSummarizeTemplate = document.getElementById('dropdown-translate-summarize-template').value;
-
-  // Update settings object
-  settings.apiKey = apiKey;
-  settings.model = model; // Save model from input
-  settings.defaultLanguage = language;
-  settings.eventTitleLanguage = eventTitleLanguage;
-  settings.theme = theme;
-  settings.fontSize = fontSize;
-  settings.tldrMode = tldrMode;
-  settings.showReply = showReply;
-  if (replyModel) settings.replyModel = replyModel;
-  settings.autorun = autorun;
-  settings.autorunOption = autorunOption;
-  settings.devMode = devMode;
-  settings.devServer = devServer;
-
-  // Make sure templates object exists
-  if (!settings.templates) {
-    settings.templates = {};
-  }
-
-  settings.templates.summarize = summarizeTemplate;
-  settings.templates.translate = translateTemplate;
-  settings.templates.translateSummarize = translateSummarizeTemplate;
-  // Save reply template
-  settings.templates.reply = replyTemplate;
-
-  // Save settings
-  localStorage.setItem('michael_settings', JSON.stringify(settings));
-
-  // Save API key separately
-  if (apiKey) {
-    localStorage.setItem("michael_api_key", apiKey);
-  } else {
-    localStorage.removeItem("michael_api_key");
-  }
-
-  // Apply theme if changed
-  localStorage.setItem('theme', theme);
-  applyCurrentTheme();
-
-  // Apply font size
-  applyFontSize(fontSize);
-
-  // Update UI for reply button
-  updateReplyButtonVisibility(showReply === 'true');
-
-  // Update dev badges visibility
-  updateDevBadges(devMode === 'true');
-
-  showNotification('All settings saved successfully');
-
-  // Close the dropdown
-  toggleSettingsView();
 }
 
 /**
  * Reset template fields to defaults
  */
 function resetTemplates() {
-  // Save default templates back into the main settings object
-  const currentSettingsText = localStorage.getItem("michael_settings");
-  const currentSettings = currentSettingsText ? JSON.parse(currentSettingsText) : {};
-  currentSettings.templates = DEFAULT_TEMPLATES;
-  localStorage.setItem("michael_settings", JSON.stringify(currentSettings));
+  const currentSettings = getSettings();
+  const sessionDefaults = getSavedTemplateDefaults();
+  currentSettings.templates = {
+    ...createBlankPromptTemplates(),
+    ...sessionDefaults,
+  };
+  saveSettingsToStore(currentSettings);
+  saveRoamingStoreAsync().catch((error) => {
+    console.error("Error saving template reset:", error);
+  });
 
-  // Update textareas
-  document.getElementById('dropdown-summarize-template').value = DEFAULT_TEMPLATES.summarize;
-  document.getElementById('dropdown-translate-template').value = DEFAULT_TEMPLATES.translate;
-  document.getElementById('dropdown-translate-summarize-template').value = DEFAULT_TEMPLATES.translateSummarize;
-  document.getElementById('dropdown-reply-template').value = DEFAULT_TEMPLATES.reply;
-  showNotification('Templates reset to defaults');
+  applyPromptTemplatesToForm(currentSettings.templates);
+  showNotification(PROVIDER_MESSAGES.templatesReset);
+}
+
+function clearTemplates() {
+  const currentSettings = getSettings();
+  currentSettings.templates = createBlankPromptTemplates();
+  saveSettingsToStore(currentSettings);
+  saveRoamingStoreAsync().catch((error) => {
+    console.error("Error saving cleared templates:", error);
+  });
+  applyPromptTemplatesToForm(currentSettings.templates);
+  showNotification(PROVIDER_MESSAGES.templatesCleared);
+}
+
+function loadBuiltInTemplateDefaults() {
+  const builtInDefaults = createDefaultPromptTemplates();
+  applyPromptTemplatesToForm(builtInDefaults);
+  showNotification("Built-in prompt defaults loaded into the form.");
+}
+
+function saveCurrentTemplatesAsDefaults() {
+  const templates = collectPromptTemplatesFromForm();
+  const currentSettings = getSettings();
+  currentSettings.templates = {
+    ...createBlankPromptTemplates(),
+    ...templates,
+  };
+
+  saveTemplateDefaults(templates);
+  saveSettingsToStore(currentSettings);
+  saveRoamingStoreAsync().catch((error) => {
+    console.error("Error saving template defaults:", error);
+  });
+  showNotification(PROVIDER_MESSAGES.sessionDefaultsSaved);
+}
+
+async function copyAllTemplatesToClipboard() {
+  try {
+    const templates = collectPromptTemplatesFromForm();
+    const lines = [
+      "# Michael Prompt Templates",
+      "",
+      ...Object.entries(templates).flatMap(([key, value]) => [
+        `## ${key}`,
+        "```",
+        value || "",
+        "```",
+        "",
+      ]),
+    ];
+
+    await navigator.clipboard.writeText(lines.join("\n"));
+    showNotification("All prompt templates copied to clipboard.", "success");
+  } catch (error) {
+    console.error("Error copying prompt templates:", error);
+    showNotification("Failed to copy prompt templates.", "error");
+  }
 }
 
 /**
@@ -684,69 +873,50 @@ function resetTemplates() {
  */
 function loadDropdownSettings() {
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    const apiKey = localStorage.getItem("michael_api_key");
+    const settings = getSettings();
+    const sessionDefaults = getSavedTemplateDefaults();
 
-    // Load main settings
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
+    document.getElementById("dropdown-api-key").value = settings.apiKey || "";
+    if (settings.defaultLanguage)
+      document.getElementById("dropdown-language").value = settings.defaultLanguage;
+    if (settings.eventTitleLanguage)
+      document.getElementById("dropdown-event-title-language").value = settings.eventTitleLanguage;
+    if (settings.theme) document.getElementById("dropdown-theme").value = settings.theme;
+    if (settings.fontSize) document.getElementById("dropdown-font-size").value = settings.fontSize;
+    if (settings.tldrMode) document.getElementById("dropdown-tldr-mode").value = settings.tldrMode;
+    if (settings.showReply)
+      document.getElementById("dropdown-show-reply").value = settings.showReply;
+    if (settings.devServer !== undefined)
+      document.getElementById("dropdown-dev-server").value = settings.devServer;
+    if (settings.autorun) document.getElementById("dropdown-autorun").value = settings.autorun;
+    if (settings.autorunOption)
+      document.getElementById("dropdown-autorun-option").value = settings.autorunOption;
+    if (settings.devMode) document.getElementById("dropdown-dev-mode").value = settings.devMode;
 
-      // Set form values
-      if (settings.apiKey) document.getElementById('dropdown-api-key').value = settings.apiKey;
-      // Set model input value
-      if (settings.model) document.getElementById('dropdown-model').value = settings.model;
-      if (settings.defaultLanguage) document.getElementById('dropdown-language').value = settings.defaultLanguage;
-      if (settings.eventTitleLanguage) document.getElementById('dropdown-event-title-language').value = settings.eventTitleLanguage;
-      if (settings.theme) document.getElementById('dropdown-theme').value = settings.theme;
-      if (settings.fontSize) document.getElementById('dropdown-font-size').value = settings.fontSize;
-      if (settings.tldrMode) document.getElementById('dropdown-tldr-mode').value = settings.tldrMode;
-      if (settings.showReply) document.getElementById('dropdown-show-reply').value = settings.showReply;
-      if (settings.devServer) document.getElementById('dropdown-dev-server').value = settings.devServer;
-      if (settings.replyModel && document.getElementById('dropdown-reply-model')) document.getElementById('dropdown-reply-model').value = settings.replyModel;
-
-      // Show/hide dev server input based on dev mode
-      const devServerGroup = document.getElementById("dev-server-group");
-      if (devServerGroup) {
-        devServerGroup.style.display = settings.devMode === 'true' ? 'block' : 'none';
-      }
-
-      // Update dev badges visibility
-      updateDevBadges(settings.devMode === 'true');
-
-      // Apply font size if saved
-      if (settings.fontSize) {
-        applyFontSize(settings.fontSize);
-      }
-
-      // Update reply button visibility
-      if (settings.showReply) {
-        updateReplyButtonVisibility(settings.showReply === 'true');
-      }
-
-      // Set templates
-      if (settings.templates) {
-        document.getElementById('dropdown-summarize-template').value = settings.templates.summarize || DEFAULT_TEMPLATES.summarize;
-        document.getElementById('dropdown-translate-template').value = settings.templates.translate || DEFAULT_TEMPLATES.translate;
-        document.getElementById('dropdown-translate-summarize-template').value = settings.templates.translateSummarize || DEFAULT_TEMPLATES.translateSummarize;
-        // Load reply template
-        document.getElementById('dropdown-reply-template').value = settings.templates.reply || DEFAULT_TEMPLATES.reply;
-      } else {
-        // If templates object doesn't exist, load defaults
-        resetTemplates();
-      }
-    } else {
-      // No settings found, load default templates
-      resetTemplates();
+    const devServerGroup = document.getElementById("dev-server-group");
+    if (devServerGroup) {
+      devServerGroup.style.display = settings.devMode === "true" ? "block" : "none";
     }
 
-    // Load API key
-    if (apiKey) {
-      document.getElementById('dropdown-api-key').value = apiKey;
-    }
+    updateDevBadges(settings.devMode === "true");
+    applyFontSize(settings.fontSize || DEFAULT_SETTINGS.fontSize);
+    updateReplyButtonVisibility(settings.showReply === "true");
+
+    const templates =
+      settings.templates && Object.keys(settings.templates).length
+        ? settings.templates
+        : sessionDefaults;
+    applyPromptTemplatesToForm({
+      ...createBlankPromptTemplates(),
+      ...templates,
+    });
+
+    availableModelCatalog = getCachedModelCatalog();
+    syncModelDropdowns();
+    updateAuthenticationStatus();
   } catch (error) {
-    console.error('Error loading dropdown settings:', error);
-    // If there's an error, reset to defaults
-    resetTemplates();
+    console.error("Error loading dropdown settings:", error);
+    applyPromptTemplatesToForm(createBlankPromptTemplates());
   }
 }
 
@@ -755,7 +925,7 @@ function loadDropdownSettings() {
  * @param {string} size - The font size to apply (small, medium, large)
  */
 function applyFontSize(size) {
-  document.documentElement.setAttribute('data-font-size', size || 'medium');
+  document.documentElement.setAttribute("data-font-size", size || "medium");
 }
 
 // Get email content
@@ -771,67 +941,30 @@ async function getEmailContent() {
   });
 }
 
-// Generate content using Gemini API
+// Generate content using Z.AI GLM Coding Plan
 async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
-  // Get model from settings or use default
-  let model = "gemini-2.0-flash-light";
+  let model = "";
 
   if (modelOverride) {
     model = modelOverride;
   } else {
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.model) {
-          model = settings.model;
-        }
-      }
+      model = requireModel("model", "Primary model");
     } catch (error) {
       console.error("Error getting model from settings:", error);
+      throw error;
     }
   }
 
-  // API URL with selected model
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
   try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.4,
-          topK: 32,
-          topP: 0.95,
-          maxOutputTokens: isTldr ? 800 : 8192, // Limit tokens for TL;DR
-        },
-        safetySettings: safetySettings
-      })
+    return await generateText(prompt, {
+      apiKey,
+      model,
+      maxTokens: isTldr ? 800 : 8192,
+      temperature: 0.4,
     });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Error generating content');
-    }
-
-    if (!data.candidates || data.candidates.length === 0) {
-      throw new Error('No content generated');
-    }
-
-    // Extract the generated text
-    const generatedText = data.candidates[0].content.parts[0].text;
-    return generatedText;
   } catch (error) {
-    console.error('Error generating content:', error);
+    console.error("Error generating content:", error);
     throw error;
   } finally {
     // Hide loading spinner only if this is not a TL;DR request
@@ -846,10 +979,10 @@ async function generateTldrContent(prompt, apiKey, language = "Korean", modelOve
   const subject = Office.context.mailbox.item.subject;
   const emailContent = await getEmailContent();
 
-  const tldrPrompt = DEFAULT_TEMPLATES.tldrPrompt
-    .replace('{subject}', subject)
-    .replace('{content}', emailContent)
-    .replace('{language}', language);
+  const tldrPrompt = requireTemplate("tldrPrompt", "TL;DR")
+    .replace("{subject}", subject)
+    .replace("{content}", emailContent)
+    .replace("{language}", language);
 
   const content = await generateContent(tldrPrompt, apiKey, modelOverride, true);
   return content;
@@ -877,26 +1010,47 @@ function getLanguageText(languageCode) {
   }
 }
 
-// Get API key from local storage
+// Get the configured Z.AI API key from Outlook add-in settings
 function getApiKey() {
-  return localStorage.getItem("michael_api_key");
+  const input = document.getElementById("dropdown-api-key");
+  if (input && typeof input.value === "string" && input.value.trim()) {
+    return input.value.trim();
+  }
+
+  const settings = getSettings();
+  return typeof settings.apiKey === "string" ? settings.apiKey.trim() : "";
 }
 
 // Get language from settings
 function getLanguage() {
-  try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.defaultLanguage) {
-        return settings.defaultLanguage;
-      }
-    }
-    return 'ko'; // Default to Korean
-  } catch (error) {
-    console.error('Error getting language:', error);
-    return 'ko';
+  const settings = getSettings();
+  return settings.defaultLanguage || DEFAULT_SETTINGS.defaultLanguage;
+}
+
+function getTemplateValue(templateKey) {
+  const settings = getSettings();
+  return settings.templates && typeof settings.templates[templateKey] === "string"
+    ? settings.templates[templateKey].trim()
+    : "";
+}
+
+function requireTemplate(templateKey, label) {
+  const template = getTemplateValue(templateKey);
+  if (!template) {
+    throw new Error(`${label} prompt is empty. Configure it in Settings > Templates.`);
   }
+
+  return template;
+}
+
+function requireModel(settingKey, label) {
+  const settings = getSettings();
+  const model = typeof settings[settingKey] === "string" ? settings[settingKey].trim() : "";
+  if (!model) {
+    throw new Error(`${label} is empty. Select a model in Settings > General.`);
+  }
+
+  return model;
 }
 
 // Summarize email
@@ -904,7 +1058,7 @@ async function summarizeEmail() {
   const apiKey = getApiKey();
 
   if (!apiKey) {
-    showNotification("Please add your Gemini API key in the settings", 'error');
+    showNotification(getMissingApiKeyMessage(), "error");
     toggleSettingsView(); // Open settings dropdown to prompt for API key
     return;
   }
@@ -916,42 +1070,25 @@ async function summarizeEmail() {
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
 
-    // Get template from storage or use default
-    let template = DEFAULT_TEMPLATES.summarize;
-    try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.templates && settings.templates.summarize) {
-          template = settings.templates.summarize;
-        }
-      }
-    } catch (error) {
-      console.error("Error getting template:", error);
-    }
+    const template = requireTemplate("summarize", "Summarize");
 
     // Replace placeholders in template
-    const prompt = template
-      .replace('{subject}', subject)
-      .replace('{content}', emailContent);
+    const prompt = template.replace("{subject}", subject).replace("{content}", emailContent);
 
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.tldrMode) {
-          tldrMode = settings.tldrMode === 'true';
-        }
+      const settings = getSettings();
+      if (settings.tldrMode) {
+        tldrMode = settings.tldrMode === "true";
       }
     } catch (error) {
-      console.error('Error getting TLDR mode setting:', error);
+      console.error("Error getting TLDR mode setting:", error);
     }
 
     if (tldrMode) {
       // Generate TL;DR first
-      const tldrContent = await generateTldrContent(prompt, apiKey, "English");
+      const tldrContent = await generateTldrContent(prompt, apiKey, getLanguageText(getLanguage()));
       hideLoading();
       showResults(tldrContent, TYPES.SUMMARIZE);
 
@@ -967,7 +1104,7 @@ async function summarizeEmail() {
       showResults(summary, TYPES.SUMMARIZE);
     }
   } catch (error) {
-    showNotification(`Error: ${error.message}`, 'error');
+    showNotification(`Error: ${error.message}`, "error");
   }
 }
 
@@ -977,7 +1114,7 @@ async function translateEmail() {
   const language = getLanguage();
 
   if (!apiKey) {
-    showNotification("Please add your Gemini API key in the settings", 'error');
+    showNotification(getMissingApiKeyMessage(), "error");
     toggleSettingsView(); // Open settings dropdown to prompt for API key
     return;
   }
@@ -989,42 +1126,25 @@ async function translateEmail() {
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
 
-    // Get template from storage or use default
-    let template = DEFAULT_TEMPLATES.translate;
-    try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.templates && settings.templates.translate) {
-          template = settings.templates.translate;
-        }
-      }
-    } catch (error) {
-      console.error("Error getting template:", error);
-    }
+    const template = requireTemplate("translate", "Translate");
 
     // Replace placeholders in template
-    const prompt = template
-      .replace('{subject}', subject)
-      .replace('{content}', emailContent);
+    const prompt = template.replace("{subject}", subject).replace("{content}", emailContent);
 
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.tldrMode) {
-          tldrMode = settings.tldrMode === 'true';
-        }
+      const settings = getSettings();
+      if (settings.tldrMode) {
+        tldrMode = settings.tldrMode === "true";
       }
     } catch (error) {
-      console.error('Error getting TLDR mode setting:', error);
+      console.error("Error getting TLDR mode setting:", error);
     }
 
     if (tldrMode) {
       // Generate TL;DR first
-      const tldrContent = await generateTldrContent(prompt, apiKey, language);
+      const tldrContent = await generateTldrContent(prompt, apiKey, getLanguageText(language));
       hideLoading();
       showResults(tldrContent, TYPES.TRANSLATE);
 
@@ -1036,11 +1156,11 @@ async function translateEmail() {
       updateExpandButton(true);
     } else {
       // Generate full content only
-      const translation = await generateContent(prompt, apiKey, language);
+      const translation = await generateContent(prompt, apiKey);
       showResults(translation, TYPES.TRANSLATE);
     }
   } catch (error) {
-    showNotification(`Error: ${error.message}`, 'error');
+    showNotification(`Error: ${error.message}`, "error");
   }
 }
 
@@ -1048,17 +1168,17 @@ async function translateEmail() {
  * Update the expand button text and style based on the full content display state
  */
 function updateExpandButton(isFullContentVisible) {
-  const expandButton = document.getElementById('expand-content');
+  const expandButton = document.getElementById("expand-content");
 
   if (expandButton) {
     expandButton.disabled = !isFullContentVisible;
-    expandButton.classList.toggle('ms-Button--disabled', !isFullContentVisible);
+    expandButton.classList.toggle("ms-Button--disabled", !isFullContentVisible);
     if (!isFullContentVisible) {
       expandButton.innerHTML = '<span class="ms-Button-label">Loading Full Content...</span>';
-      expandButton.classList.remove('ms-Button--primary');
+      expandButton.classList.remove("ms-Button--primary");
     } else {
       expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-      expandButton.classList.add('ms-Button--primary');
+      expandButton.classList.add("ms-Button--primary");
     }
   }
 }
@@ -1112,96 +1232,19 @@ function copyResult() {
     }
   }
 
-  navigator.clipboard.writeText(resultContent).then(() => {
-    const copyStatus = document.getElementById("copy-status");
-    copyStatus.textContent = "Copied!";
-    setTimeout(() => {
-      copyStatus.textContent = "";
-    }, 2000);
-  }).catch(err => {
-    console.error('Could not copy text: ', err);
-    showNotification("Failed to copy to clipboard", "error");
-  });
-}
-
-// Convert markdown to HTML for rendering
-function markdownToHtml(markdown) {
-  if (!markdown) return '';
-
-  // Get the current font size from settings
-  let fontSize = 'medium';
-  try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.fontSize) {
-        fontSize = settings.fontSize;
-      }
-    }
-  } catch (error) {
-    console.error('Error getting font size:', error);
-  }
-
-  // Get font size values
-  const fontSizeValue = fontSize === 'small' ? '13px' :
-    fontSize === 'large' ? '18px' : '16px';
-
-  const lineHeightValue = fontSize === 'small' ? '1.5' :
-    fontSize === 'large' ? '1.7' : '1.6';
-
-  const codeFontSize = fontSize === 'small' ? '13px' :
-    fontSize === 'large' ? '17px' : '15px';
-
-  // Check if this is a reply format (starts with # Re: or similar)
-  const isReply = /^#\s+(?:Re:|Subject:|\[Reply\]|Response:)/i.test(markdown);
-
-  // Simple markdown to HTML conversion
-  let html = markdown
-    // Handle reply format headings specially
-    .replace(/^#\s+(.*$)/gim, function (match, p1) {
-      if (isReply) {
-        return `<h1 class="reply-heading">${p1}</h1>`;
-      } else {
-        return `<h1>${p1}</h1>`;
-      }
+  navigator.clipboard
+    .writeText(resultContent)
+    .then(() => {
+      const copyStatus = document.getElementById("copy-status");
+      copyStatus.textContent = "Copied!";
+      setTimeout(() => {
+        copyStatus.textContent = "";
+      }, 2000);
     })
-    // Other headings
-    .replace(/^###\s+(.*$)/gim, '<h3>$1</h3>')
-    .replace(/^##\s+(.*$)/gim, '<h2>$1</h2>')
-
-    // Convert bold and italic with stronger styling
-    .replace(/\*\*(.*?)\*\*/gim, '<strong style="font-weight: 700;">$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em style="font-style: italic;">$1</em>')
-    .replace(/\_\_([^_]+)\_\_/gim, '<strong style="font-weight: 700;">$1</strong>')
-    .replace(/\_([^_]+)\_/gim, '<em style="font-style: italic;">$1</em>')
-
-    // Convert lists - updated to remove indentation
-    .replace(/^\s*\n\* (.*)/gim, '<ul class="no-indent">\n<li>$1</li>')
-    .replace(/^\* (.*)/gim, '<li>$1</li>')
-    .replace(/^\s*\n\d+\. (.*)/gim, '<ol class="no-indent">\n<li>$1</li>')
-    .replace(/^\d+\. (.*)/gim, '<li>$1</li>')
-
-    // Convert blockquotes with improved styling
-    .replace(/^\> (.*$)/gim, '<blockquote style="border-left: 4px solid var(--accent-color); padding-left: 1em; margin: 1em 0; background-color: rgba(0,0,0,0.03);">$1</blockquote>')
-
-    // Convert code blocks with improved visibility
-    .replace(/```([\s\S]*?)```/gim, '<pre style="background-color: var(--code-background); padding: 12px; border-radius: 5px; overflow-x: auto; border: 1px solid var(--border-color);"><code style="font-family: \'Courier New\', Courier, monospace; font-size: ' + codeFontSize + ';">$1</code></pre>')
-    .replace(/`([^`]+)`/gim, '<code style="background-color: var(--code-background); padding: 3px 5px; border-radius: 3px; font-family: \'Courier New\', Courier, monospace; font-size: ' + codeFontSize + '; font-weight: 500;">$1</code>')
-
-    // Convert horizontal rules
-    .replace(/^\-\-\-$/gim, '<hr style="height: 2px; background-color: var(--border-color); border: 0; margin: 1.5em 0;">')
-
-    // Convert links with better visibility
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" style="color: var(--accent-color); text-decoration: none; font-weight: bold;">$1</a>')
-
-    // Convert paragraphs - handle newlines
-    .replace(/\n\s*\n/gim, '</p><p style="margin: 0.8em 0; font-size: ' + fontSizeValue + '; line-height: ' + lineHeightValue + ';">')
-    .replace(/\n/gim, '<br>')
-
-    // Wrap in paragraph if not already wrapped
-    .replace(/^(.+)$/gim, '<p style="margin: 0.8em 0; font-size: ' + fontSizeValue + '; line-height: ' + lineHeightValue + ';">$1</p>');
-
-  return html;
+    .catch((err) => {
+      console.error("Could not copy text: ", err);
+      showNotification("Failed to copy to clipboard", "error");
+    });
 }
 
 // Translate and Summarize email
@@ -1209,7 +1252,7 @@ async function translateAndSummarizeEmail() {
   const apiKey = getApiKey();
 
   if (!apiKey) {
-    showNotification("Please add your Gemini API key in the settings", 'error');
+    showNotification(getMissingApiKeyMessage(), "error");
     toggleSettingsView(); // Open settings dropdown to prompt for API key
     return;
   }
@@ -1222,39 +1265,29 @@ async function translateAndSummarizeEmail() {
     const subject = Office.context.mailbox.item.subject;
     let language = "English";
 
-    // Get template from storage or use default
-    let template = DEFAULT_TEMPLATES.translateSummarize;
+    let template = requireTemplate("translateSummarize", "Translate & Summarize");
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.templates && settings.templates.translateSummarize) {
-          template = settings.templates.translateSummarize;
-        }
-        if (settings.defaultLanguage) language = getLanguageText(settings.defaultLanguage);
-      }
+      const settings = getSettings();
+      if (settings.defaultLanguage) language = getLanguageText(settings.defaultLanguage);
     } catch (error) {
       console.error("Error getting template:", error);
     }
 
     // Replace placeholders in template
     const prompt = template
-      .replace('{subject}', subject)
-      .replace('{content}', emailContent)
-      .replace('{language}', language);
+      .replace("{subject}", subject)
+      .replace("{content}", emailContent)
+      .replace("{language}", language);
 
     // Check for TL;DR mode
     let tldrMode = true;
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.tldrMode) {
-          tldrMode = settings.tldrMode === 'true';
-        }
+      const settings = getSettings();
+      if (settings.tldrMode) {
+        tldrMode = settings.tldrMode === "true";
       }
     } catch (error) {
-      console.error('Error getting TLDR mode setting:', error);
+      console.error("Error getting TLDR mode setting:", error);
     }
 
     if (tldrMode) {
@@ -1266,7 +1299,6 @@ async function translateAndSummarizeEmail() {
       // Then generate full content in the background
       const fullContent = await generateContent(prompt, apiKey);
 
-
       // display notification of full content
       updateResults(fullContent);
       updateExpandButton(true);
@@ -1276,7 +1308,7 @@ async function translateAndSummarizeEmail() {
       showResults(result, TYPES.TRANSLATE_SUMMARIZE);
     }
   } catch (error) {
-    showNotification(`Error: ${error.message}`, 'error');
+    showNotification(`Error: ${error.message}`, "error");
   }
 }
 
@@ -1309,7 +1341,6 @@ function hideLoading() {
 
 // Function to show the results
 function showResults(content, type) {
-
   // Reset the full result content
   document.getElementById("result-content").innerHTML = "";
   // Reset the tldr content
@@ -1321,7 +1352,7 @@ function showResults(content, type) {
     expandButton.disabled = true;
     expandButton.classList.add("ms-Button--disabled");
     expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-    expandButton.classList.remove('ms-Button--primary');
+    expandButton.classList.remove("ms-Button--primary");
   }
 
   // Hide loading section
@@ -1339,15 +1370,12 @@ function showResults(content, type) {
   // Check for TL;DR mode
   let tldrMode = true;
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.tldrMode) {
-        tldrMode = settings.tldrMode === 'true';
-      }
+    const settings = getSettings();
+    if (settings.tldrMode) {
+      tldrMode = settings.tldrMode === "true";
     }
   } catch (error) {
-    console.error('Error getting TLDR mode setting:', error);
+    console.error("Error getting TLDR mode setting:", error);
   }
 
   // Update content based on TL;DR mode
@@ -1392,7 +1420,7 @@ function showResults(content, type) {
       expandButton.disabled = false;
       expandButton.classList.remove("ms-Button--disabled");
       expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-      expandButton.classList.add('ms-Button--primary');
+      expandButton.classList.add("ms-Button--primary");
     }
   }
 
@@ -1411,26 +1439,23 @@ function showResults(content, type) {
   // Show/hide generate reply button based on type and settings
   const generateReplyButton = document.getElementById("generate-reply");
   if (generateReplyButton) {
-    const saved = localStorage.getItem('michael_settings');
-    const showReply = saved && JSON.parse(saved).showReply === 'true';
-    generateReplyButton.style.display = type === TYPES.REPLY ? "none" : (showReply ? "inline-block" : "none");
+    const showReply = getSettings().showReply === "true";
+    generateReplyButton.style.display =
+      type === TYPES.REPLY ? "none" : showReply ? "inline-block" : "none";
   }
 
   // Apply font size from settings
   try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.fontSize) {
-        applyFontSize(settings.fontSize);
-      }
-      // Update reply button visibility
-      if (settings.showReply) {
-        updateReplyButtonVisibility(settings.showReply === 'true');
-      }
+    const settings = getSettings();
+    if (settings.fontSize) {
+      applyFontSize(settings.fontSize);
+    }
+    // Update reply button visibility
+    if (settings.showReply) {
+      updateReplyButtonVisibility(settings.showReply === "true");
     }
   } catch (error) {
-    console.error('Error applying font size:', error);
+    console.error("Error applying font size:", error);
   }
 
   // Scroll to top of result content if elements exist
@@ -1466,20 +1491,13 @@ function updateResults(content) {
   }
 }
 
-// Function to reset the UI
-function resetUI() {
-  document.getElementById("loading").style.display = "none";
-  document.getElementById("result-section").style.display = "none";
-  document.getElementById("landing-screen").style.display = "block";
-}
-
 /**
  * Update reply button visibility based on settings
  */
 function updateReplyButtonVisibility(show) {
-  const replyButton = document.getElementById('generate-reply');
+  const replyButton = document.getElementById("generate-reply");
   if (replyButton) {
-    replyButton.style.display = show ? 'inline-block' : 'none';
+    replyButton.style.display = show ? "inline-block" : "none";
   }
 }
 
@@ -1487,21 +1505,21 @@ function updateReplyButtonVisibility(show) {
  * Expand the full content when the expand button is clicked
  */
 function expandContent() {
-  const expandButton = document.getElementById('expand-content');
+  const expandButton = document.getElementById("expand-content");
   if (expandButton.disabled) {
     return; // Don't do anything if button is disabled
   }
 
-  const fullContentContainer = document.getElementById('full-content-container');
+  const fullContentContainer = document.getElementById("full-content-container");
 
-  if (fullContentContainer.style.display === 'none') {
-    fullContentContainer.style.display = 'block';
+  if (fullContentContainer.style.display === "none") {
+    fullContentContainer.style.display = "block";
     expandButton.innerHTML = '<span class="ms-Button-label">Hide Full Content</span>';
-    expandButton.classList.remove('ms-Button--primary');
+    expandButton.classList.remove("ms-Button--primary");
   } else {
-    fullContentContainer.style.display = 'none';
+    fullContentContainer.style.display = "none";
     expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-    expandButton.classList.add('ms-Button--primary');
+    expandButton.classList.add("ms-Button--primary");
   }
 }
 
@@ -1517,13 +1535,13 @@ function formatReplyOutput(replyText) {
     subject = subjectMatch[1].trim();
 
     // Remove the subject line from the text to get the body
-    body = replyText.replace(/^(?:SUBJECT:|Subject:)\s*.+?\n+/m, '').trim();
+    body = replyText.replace(/^(?:SUBJECT:|Subject:)\s*.+?\n+/m, "").trim();
   } else {
     // If no explicit subject marker, check for first line as subject
-    const lines = replyText.trim().split('\n');
+    const lines = replyText.trim().split("\n");
     if (lines.length > 0) {
       subject = lines[0].trim();
-      body = lines.slice(1).join('\n').trim();
+      body = lines.slice(1).join("\n").trim();
     } else {
       // Fallback if no clear structure
       subject = "Re: Your email";
@@ -1545,7 +1563,7 @@ function formatReplyOutput(replyText) {
     html: formattedHtml,
     subject: subject,
     body: body,
-    raw: `Subject: ${subject}\n\n${body}`
+    raw: `Subject: ${subject}\n\n${body}`,
   };
 }
 
@@ -1554,7 +1572,7 @@ async function generateReply() {
   const apiKey = getApiKey();
 
   if (!apiKey) {
-    showNotification("Please add your Gemini API key in the settings", 'error');
+    showNotification(getMissingApiKeyMessage(), "error");
     toggleSettingsView();
     return;
   }
@@ -1566,39 +1584,21 @@ async function generateReply() {
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
 
-    // Get reply template from storage or use default
-    let template = DEFAULT_TEMPLATES.reply;
-    try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.templates && settings.templates.reply) {
-          template = settings.templates.reply;
-        }
-      }
-    } catch (error) {
-      console.error("Error getting reply template:", error);
-    }
+    const template = requireTemplate("reply", "Reply");
 
     // Get language (assuming you still want language for reply)
     const language = getLanguage();
 
     // Replace placeholders in template
     const prompt = template
-      .replace('{subject}', subject)
-      .replace('{content}', emailContent)
-      .replace('{language}', getLanguageText(language)); // Ensure language name is used if placeholder exists
+      .replace("{subject}", subject)
+      .replace("{content}", emailContent)
+      .replace("{language}", getLanguageText(language)); // Ensure language name is used if placeholder exists
 
     // Get reply model from settings
     let replyModelOverride = null;
     try {
-      const savedSettings = localStorage.getItem('michael_settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        if (settings.replyModel) {
-          replyModelOverride = settings.replyModel;
-        }
-      }
+      replyModelOverride = requireModel("replyModel", "Reply model");
     } catch (error) {
       console.error("Error getting reply model:", error);
     }
@@ -1617,7 +1617,7 @@ async function generateReply() {
     document.getElementById("copy-reply").style.display = "inline-block";
     document.getElementById("copy-result").style.display = "none";
   } catch (error) {
-    showNotification(`Error: ${error.message}`, 'error');
+    showNotification(`Error: ${error.message}`, "error");
   } finally {
     hideLoading();
   }
@@ -1639,48 +1639,19 @@ function copyReply() {
   // Format as email reply
   const replyContent = `Subject: ${subject}\n\n${body}`;
 
-  navigator.clipboard.writeText(replyContent).then(() => {
-    const copyStatus = document.getElementById("copy-reply-status");
-    copyStatus.textContent = "Copied!";
-    setTimeout(() => {
-      copyStatus.textContent = "";
-    }, 2000);
-  }).catch(err => {
-    console.error('Could not copy reply: ', err);
-    showNotification("Failed to copy reply", "error");
-  });
-}
-
-/**
- * Extract TL;DR from content, or generate a brief summary
- */
-function extractTLDR(content) {
-  // Check if the content already contains a TL;DR section
-  const tldrRegex = /TL;DR:?\s*(.*?)(?:\n\n|$)/is;
-  const tldrMatch = content.match(tldrRegex);
-
-  if (tldrMatch && tldrMatch[1]) {
-    return tldrMatch[1];
-  }
-
-  // Check for "Summary:" section
-  const summaryRegex = /Summary:?\s*(.*?)(?:\n\n|$)/is;
-  const summaryMatch = content.match(summaryRegex);
-
-  if (summaryMatch && summaryMatch[1]) {
-    return summaryMatch[1];
-  }
-
-  // If no TL;DR or Summary found, use the first paragraph
-  const firstParagraph = content.split('\n\n')[0];
-  if (firstParagraph && firstParagraph.length < 300) {
-    return firstParagraph;
-  } else if (firstParagraph) {
-    return firstParagraph.substring(0, 250) + '...';
-  }
-
-  // Fallback
-  return content.substring(0, 200) + '...';
+  navigator.clipboard
+    .writeText(replyContent)
+    .then(() => {
+      const copyStatus = document.getElementById("copy-reply-status");
+      copyStatus.textContent = "Copied!";
+      setTimeout(() => {
+        copyStatus.textContent = "";
+      }, 2000);
+    })
+    .catch((err) => {
+      console.error("Could not copy reply: ", err);
+      showNotification("Failed to copy reply", "error");
+    });
 }
 
 /**
@@ -1722,82 +1693,20 @@ async function initializeApp() {
   // API 키 확인
   const apiKey = getApiKey();
   if (!apiKey) {
-    showNotification("Please add your Gemini API key in settings", "warning");
+    showNotification(getMissingApiKeyMessage(), "warning");
   }
 }
 
 /**
- * Toggle settings panel visibility
- */
-function toggleSettings() {
-  const settingsSection = document.getElementById("settings-section");
-  if (settingsSection.style.display === "none") {
-    settingsSection.style.display = "block";
-  } else {
-    settingsSection.style.display = "none";
-  }
-}
-
-/**
- * Save API key to settings
- */
-function saveApiKey() {
-  const apiKey = document.getElementById("api-key-input").value;
-  localStorage.setItem("michael_api_key", apiKey);
-  showNotification("API key saved successfully!", "success");
-  toggleSettings();
-}
-
-/**
- * Save settings to local storage
- */
-function saveSettings() {
-  const settings = {
-    theme: document.getElementById("theme-select").value,
-    fontSize: document.getElementById("font-size-select").value,
-    apiKey: document.getElementById("api-key-input").value
-  };
-  localStorage.setItem("settings", JSON.stringify(settings));
-  showNotification("Settings saved successfully!", "success");
-  loadSettings();
-}
-
-/**
- * Load settings from local storage
+ * Load settings from Outlook add-in settings
  */
 function loadSettings() {
   try {
-    const savedSettings = localStorage.getItem("michael_settings");
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-
-      // Apply to dropdown values
-      Object.keys(settings).forEach(key => {
-        const element = document.getElementById(key);
-        if (element && element.tagName === "SELECT") {
-          element.value = settings[key];
-        }
-      });
-    }
+    return getSettings();
   } catch (error) {
     console.error("Error loading settings:", error);
+    return createBlankSettings();
   }
-}
-
-/**
- * Get a specific setting value
- */
-function getSetting(key) {
-  try {
-    const savedSettings = localStorage.getItem("michael_settings");
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      return settings[key];
-    }
-  } catch (error) {
-    console.error(`Error getting setting ${key}:`, error);
-  }
-  return null;
 }
 
 /**
@@ -1808,14 +1717,14 @@ function setTheme(theme) {
 
   if (theme === "system") {
     // Use system preference
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      root.setAttribute('data-theme', 'dark');
+    if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      root.setAttribute("data-theme", "dark");
     } else {
-      root.setAttribute('data-theme', 'light');
+      root.setAttribute("data-theme", "light");
     }
   } else {
     // Use explicit theme
-    root.setAttribute('data-theme', theme);
+    root.setAttribute("data-theme", theme);
   }
 }
 
@@ -1824,7 +1733,7 @@ function setTheme(theme) {
  */
 function setFontSize(size) {
   const root = document.documentElement;
-  root.style.setProperty('--result-font-size', getFontSizeValue(size));
+  root.style.setProperty("--result-font-size", getFontSizeValue(size));
 }
 
 /**
@@ -1844,108 +1753,83 @@ function getFontSizeValue(size) {
 }
 
 /**
- * Reset all settings to defaults
+ * Reset all settings stored in Outlook add-in settings.
  */
-function resetAllSettings() {
-  // Reset model selection
-  document.getElementById('dropdown-model').value = 'gemini-1.5-flash';
+async function resetAllSettings() {
+  try {
+    const blankSettings = createBlankSettings();
 
-  // Reset language selection
-  document.getElementById('dropdown-language').value = 'ko';
+    document.getElementById("dropdown-api-key").value = "";
+    document.getElementById("dropdown-model").value = blankSettings.model;
+    document.getElementById("dropdown-language").value = blankSettings.defaultLanguage;
+    document.getElementById("dropdown-event-title-language").value =
+      blankSettings.eventTitleLanguage;
+    document.getElementById("dropdown-theme").value = blankSettings.theme;
+    document.getElementById("dropdown-font-size").value = blankSettings.fontSize;
+    document.getElementById("dropdown-tldr-mode").value = blankSettings.tldrMode;
+    document.getElementById("dropdown-show-reply").value = blankSettings.showReply;
+    document.getElementById("dropdown-reply-model").value = blankSettings.replyModel;
+    document.getElementById("dropdown-autorun").value = blankSettings.autorun;
+    document.getElementById("dropdown-autorun-option").value = blankSettings.autorunOption;
+    document.getElementById("dropdown-dev-mode").value = blankSettings.devMode;
+    document.getElementById("dropdown-dev-server").value = blankSettings.devServer;
+    document.getElementById("dev-server-group").style.display = "none";
 
-  // Reset event title language selection
-  document.getElementById('dropdown-event-title-language').value = 'en';
+    applyPromptTemplatesToForm(blankSettings.templates);
 
-  // Reset theme selection
-  document.getElementById('dropdown-theme').value = 'system';
+    roamingStorage.removeItem(SETTINGS_KEY);
+    roamingStorage.removeItem(TEMPLATE_DEFAULTS_KEY);
+    roamingStorage.removeItem(MODEL_CATALOG_CACHE_KEY);
+    roamingStorage.removeItem("theme");
+    await saveRoamingStoreAsync();
+    persistModelCatalog(getDefaultZaiModels());
+    syncModelDropdowns();
+    updateAuthenticationStatus();
+    setSettingsStatus(
+      "dropdown-model-status",
+      "Saved settings cleared. Model catalog reset to fallback defaults."
+    );
 
-  // Reset font size selection
-  document.getElementById('dropdown-font-size').value = 'medium';
+    applyCurrentTheme();
+    applyFontSize(blankSettings.fontSize);
+    updateReplyButtonVisibility(blankSettings.showReply === "true");
+    updateDevBadges(false);
 
-  // Reset TLDR mode selection
-  document.getElementById('dropdown-tldr-mode').value = 'true';
-
-  // Reset show reply selection
-  document.getElementById('dropdown-show-reply').value = 'true';
-
-  // Reset reply model selection
-  document.getElementById('dropdown-reply-model').value = 'gemini-2.0-flash-lite';
-
-  // Reset autorun settings
-  document.getElementById('dropdown-autorun').value = 'false';
-  document.getElementById('dropdown-autorun-option').value = 'summarize';
-
-  // Reset dev mode settings
-  document.getElementById('dropdown-dev-mode').value = 'false';
-  document.getElementById('dropdown-dev-server').value = '';
-  document.getElementById('dev-server-group').style.display = 'none';
-
-  // Reset templates (calls the function above)
-  resetTemplates();
-
-  // Clear API key
-  document.getElementById('dropdown-api-key').value = '';
-
-  // Clear saved settings from localStorage
-  localStorage.removeItem('michael_api_key');
-  localStorage.removeItem('michael_settings'); // Clear all settings as well
-
-  // Apply default theme
-  applyCurrentTheme();
-
-  // Apply default font size
-  applyFontSize('medium');
-
-  // Update reply button visibility
-  updateReplyButtonVisibility(true);
-
-  // Update dev badges visibility
-  updateDevBadges(false);
-
-  showNotification('All settings reset to defaults', 'success');
-
-  // Re-initialize tabs to show the first one after reset
-  initializeSettingsTabs();
+    showNotification("All saved Outlook settings cleared", "success");
+    initializeSettingsTabs();
+  } catch (error) {
+    console.error("Error resetting Outlook settings:", error);
+    showNotification(`Failed to reset settings: ${error.message}`, "error");
+  }
 }
 
 /**
  * Update dev badges visibility
  */
 function updateDevBadges(show) {
-  const devBadge = document.getElementById('dev-badge');
-  const footerDevBadge = document.getElementById('footer-dev-badge');
+  const devBadge = document.getElementById("dev-badge");
+  const footerDevBadge = document.getElementById("footer-dev-badge");
 
   if (devBadge) {
-    devBadge.style.display = show ? 'block' : 'none';
+    devBadge.style.display = show ? "block" : "none";
   }
   if (footerDevBadge) {
-    footerDevBadge.style.display = show ? 'block' : 'none';
+    footerDevBadge.style.display = show ? "block" : "none";
   }
 }
 
 // Get event title language from settings
 function getEventTitleLanguage() {
-  try {
-    const savedSettings = localStorage.getItem('michael_settings');
-    if (savedSettings) {
-      const settings = JSON.parse(savedSettings);
-      if (settings.eventTitleLanguage) {
-        return settings.eventTitleLanguage;
-      }
-    }
-    return 'en'; // Default to English
-  } catch (error) {
-    console.error('Error getting event title language:', error);
-    return 'en';
-  }
+  const settings = getSettings();
+  return settings.eventTitleLanguage || DEFAULT_SETTINGS.eventTitleLanguage;
 }
 
-// Helper function to parse event details using Gemini API
-async function parseEventDetailsWithGemini(emailContent) {
+// Helper function to parse event details using Z.AI
+async function parseEventDetailsWithZai(emailContent) {
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
-      throw new Error('API key not found');
+      throw new Error(getMissingApiKeyMessage());
     }
 
     // Get event title language from settings
@@ -1953,16 +1837,16 @@ async function parseEventDetailsWithGemini(emailContent) {
     let langInstructions = "";
 
     // Set language-specific instructions
-    if (titleLanguage === 'en') {
+    if (titleLanguage === "en") {
       langInstructions = `Event title should be in English.
       If the event has a type or category, include it in square brackets ([]) at the beginning, then if there's a presenter and topic, write the presenter's name first, followed by a hyphen (-) and then the topic.`;
-    } else if (titleLanguage === 'ko') {
+    } else if (titleLanguage === "ko") {
       langInstructions = `이벤트 제목은 한국어로 작성해주세요.
       이벤트 유형이나 카테고리가 있다면 대괄호([])로 먼저 표시하고, 발표자와 주제가 있다면 발표자 이름을 먼저 쓰고 하이픈(-) 후에 주제를 적어주세요.`;
-    } else if (titleLanguage === 'ja') {
+    } else if (titleLanguage === "ja") {
       langInstructions = `イベントのタイトルは日本語で記載してください。
       イベントのタイプやカテゴリがある場合は、角括弧（[]）で囲んで最初に表示し、発表者とトピックがある場合は、発表者の名前を最初に書き、ハイフン（-）の後にトピックを書いてください。`;
-    } else if (titleLanguage === 'zh_cn') {
+    } else if (titleLanguage === "zh_cn") {
       langInstructions = `事件标题应该用中文书写。
       如果事件有类型或类别，请使用方括号（[]）将其括起来并放在开头，如果有演讲者和主题，请先写演讲者的名字，然后是连字符（-），再写主题。`;
     } else {
@@ -1971,63 +1855,13 @@ async function parseEventDetailsWithGemini(emailContent) {
       If the event has a type or category, include it in square brackets ([]) at the beginning, then if there's a presenter and topic, write the presenter's name first, followed by a hyphen (-) and then the topic.`;
     }
 
-    const prompt = `Analyze the following email content and extract information needed to create a calendar event for Microsoft Graph API.
-    The response must be in valid JSON format and follow the format below exactly.
-    Do not use escape characters that would cause parsing issues.
-    Mark any information that cannot be found as null.
+    const prompt = requireTemplate("calendarParse", "Calendar parse")
+      .replace("{languageInstructions}", langInstructions)
+      .replace("{content}", emailContent);
 
-    ${langInstructions}
-
-    Event title format examples:
-    - "[Event Type] Presenter - Topic"
-    - "[Conference Name] Presenter Name - Presentation Topic"
-    - "[Seminar Type] Speaker Name - Presentation Title"
-
-    Required JSON format:
-    {
-      "subject": "Meeting title",
-      "body": {
-        "contentType": "HTML",
-        "content": "Meeting description"
-      },
-      "start": {
-        "dateTime": "YYYY-MM-DDTHH:mm:ss",
-        "timeZone": "Asia/Seoul"
-      },
-      "end": {
-        "dateTime": "YYYY-MM-DDTHH:mm:ss",
-        "timeZone": "Asia/Seoul"
-      },
-      "location": {
-        "displayName": "Location name"
-      },
-      "attendees": [
-        {
-          "emailAddress": {
-            "address": "attendee@email.com",
-            "name": "Attendee Name"
-          },
-          "type": "required"
-        }
-      ],
-      "isOnlineMeeting": true,
-      "onlineMeetingProvider": "teamsForBusiness"
-    }
-
-    Important notes:
-    1. Convert dates and times to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
-    2. Email addresses must be in valid format
-    3. Use "Asia/Seoul" as the default timezone
-    4. Set isOnlineMeeting to true if there are Teams links or video conference details
-    5. Process special characters properly to ensure valid JSON
-    6. Return only JSON without any additional explanations or comments
-
-    Email content:
-    ${emailContent}`;
-
-    console.log('Sending prompt to Gemini API');
+    console.log("Sending prompt to Z.AI");
     const result = await generateContent(prompt, apiKey, null, false);
-    console.log('Received response from Gemini API');
+    console.log("Received response from Z.AI");
 
     // Extract only the JSON part from the result (remove any explanations or comments)
     let jsonText = result;
@@ -2038,44 +1872,44 @@ async function parseEventDetailsWithGemini(emailContent) {
       jsonText = jsonMatch[0];
     }
 
-    console.log('Extracted JSON text:', jsonText);
+    console.log("Extracted JSON text:", jsonText);
 
     // Try to parse JSON
     try {
       const eventDetails = JSON.parse(jsonText);
-      console.log('Successfully parsed event details:', eventDetails);
+      console.log("Successfully parsed event details:", eventDetails);
 
       // Validate required fields
       if (!eventDetails.subject) {
-        throw new Error('Event title not found.');
+        throw new Error("Event title not found.");
       }
 
       if (!eventDetails.start?.dateTime) {
-        throw new Error('Event start time not found.');
+        throw new Error("Event start time not found.");
       }
 
       if (!eventDetails.end?.dateTime) {
-        throw new Error('Event end time not found.');
+        throw new Error("Event end time not found.");
       }
 
       // Validate date format
       const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
       if (!dateRegex.test(eventDetails.start.dateTime)) {
-        throw new Error('Invalid start time format. (Should be YYYY-MM-DDTHH:mm:ss format)');
+        throw new Error("Invalid start time format. (Should be YYYY-MM-DDTHH:mm:ss format)");
       }
 
       if (!dateRegex.test(eventDetails.end.dateTime)) {
-        throw new Error('Invalid end time format. (Should be YYYY-MM-DDTHH:mm:ss format)');
+        throw new Error("Invalid end time format. (Should be YYYY-MM-DDTHH:mm:ss format)");
       }
 
       return eventDetails;
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      console.error('Original response:', result);
-      throw new Error('Failed to extract event information: ' + parseError.message);
+      console.error("JSON parsing error:", parseError);
+      console.error("Original response:", result);
+      throw new Error("Failed to extract event information: " + parseError.message);
     }
   } catch (error) {
-    console.error('Error extracting event information:', error);
+    console.error("Error extracting event information:", error);
     throw error;
   }
 }
@@ -2085,7 +1919,7 @@ async function createCalendarEvent(eventDetails) {
   try {
     // Validate required fields
     if (!eventDetails.subject || !eventDetails.start?.dateTime || !eventDetails.end?.dateTime) {
-      throw new Error('Required event information is missing.');
+      throw new Error("Required event information is missing.");
     }
 
     // Convert to Outlook Add-in API format
@@ -2098,9 +1932,9 @@ async function createCalendarEvent(eventDetails) {
     const optionalAttendees = [];
 
     if (eventDetails.attendees && eventDetails.attendees.length > 0) {
-      eventDetails.attendees.forEach(attendee => {
+      eventDetails.attendees.forEach((attendee) => {
         if (attendee.emailAddress && attendee.emailAddress.address) {
-          if (attendee.type === 'optional') {
+          if (attendee.type === "optional") {
             optionalAttendees.push(attendee.emailAddress.address);
           } else {
             requiredAttendees.push(attendee.emailAddress.address);
@@ -2115,12 +1949,12 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location?.displayName || '',
-      body: eventDetails.body?.content || '',
-      subject: eventDetails.subject
+      location: eventDetails.location?.displayName || "",
+      body: eventDetails.body?.content || "",
+      subject: eventDetails.subject,
     };
 
-    console.log('Creating appointment with data:', JSON.stringify(appointmentData));
+    console.log("Creating appointment with data:", JSON.stringify(appointmentData));
 
     // Display appointment form - using new appointment creation method
     Office.context.mailbox.displayNewAppointmentForm({
@@ -2128,16 +1962,16 @@ async function createCalendarEvent(eventDetails) {
       optionalAttendees: optionalAttendees,
       start: startDate,
       end: endDate,
-      location: eventDetails.location?.displayName || '',
-      body: eventDetails.body?.content || '',
-      subject: eventDetails.subject
+      location: eventDetails.location?.displayName || "",
+      body: eventDetails.body?.content || "",
+      subject: eventDetails.subject,
     });
 
-    showNotification(`Event '${eventDetails.subject}' has been created.`, 'info');
+    showNotification(`Event '${eventDetails.subject}' has been created.`, "info");
     return true;
   } catch (error) {
-    showNotification(`Failed to create event: ${error.message}`, 'error');
-    console.error('Error creating calendar event:', error);
+    showNotification(`Failed to create event: ${error.message}`, "error");
+    console.error("Error creating calendar event:", error);
     throw error;
   }
 }
@@ -2147,27 +1981,19 @@ async function checkIfCalendarEvent(emailContent) {
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
-      console.error('API key not found');
+      console.error(getMissingApiKeyMessage());
       return false;
     }
 
-    const prompt = `Check if the following email content is a calendar event (meeting, appointment, schedule, etc.).
-    Return true if the email content includes one or more of the following:
-    - Date and time information
-    - Meeting-related keywords (meeting, conference, appointment, schedule, calendar, etc.)
-    - Attendee information
-    - Location information
-    - Schedule-related actions (attendance confirmation, add to calendar, etc.)
-
-    Email content:
-    ${emailContent}
-
-    Your response must only contain "true" or "false".`;
+    const prompt = requireTemplate("calendarCheck", "Calendar check").replace(
+      "{content}",
+      emailContent
+    );
 
     const result = await generateContent(prompt, apiKey, null, true);
-    return result.toLowerCase().trim() === 'true';
+    return result.toLowerCase().trim() === "true";
   } catch (error) {
-    console.error('Error checking if calendar event:', error);
+    console.error("Error checking if calendar event:", error);
     return false;
   }
 }
@@ -2177,7 +2003,7 @@ async function handleCalendarEvent() {
   const apiKey = getApiKey();
 
   if (!apiKey) {
-    showNotification("Please add your API key in settings", 'error');
+    showNotification(getMissingApiKeyMessage(), "error");
     toggleSettingsView();
     return;
   }
@@ -2206,19 +2032,20 @@ async function handleCalendarEvent() {
 
     // Add event listener to clipboard copy button
     document.getElementById("copy-email-content").addEventListener("click", function () {
-      navigator.clipboard.writeText(emailContent)
+      navigator.clipboard
+        .writeText(emailContent)
         .then(() => {
-          showNotification("Email content copied to clipboard", 'info');
+          showNotification("Email content copied to clipboard", "info");
         })
-        .catch(err => {
-          console.error('Error copying to clipboard:', err);
-          showNotification("Failed to copy to clipboard", 'error');
+        .catch((err) => {
+          console.error("Error copying to clipboard:", err);
+          showNotification("Failed to copy to clipboard", "error");
         });
     });
 
     try {
-      // Parse event details with Gemini API
-      const eventDetails = await parseEventDetailsWithGemini(emailContent);
+      // Parse event details with Z.AI
+      const eventDetails = await parseEventDetailsWithZai(emailContent);
 
       // Display extracted event details
       document.getElementById("result-content").innerHTML = `
@@ -2226,23 +2053,22 @@ async function handleCalendarEvent() {
           <h3>Extracted Event Details</h3>
         </div>
         <div class="event-details-body">
-          <p><strong>Subject:</strong> ${eventDetails.subject || 'Not found'}</p>
-          <p><strong>Start:</strong> ${eventDetails.start?.dateTime || 'Not found'}</p>
-          <p><strong>End:</strong> ${eventDetails.end?.dateTime || 'Not found'}</p>
-          <p><strong>Location:</strong> ${eventDetails.location?.displayName || 'Not found'}</p>
+          <p><strong>Subject:</strong> ${eventDetails.subject || "Not found"}</p>
+          <p><strong>Start:</strong> ${eventDetails.start?.dateTime || "Not found"}</p>
+          <p><strong>End:</strong> ${eventDetails.end?.dateTime || "Not found"}</p>
+          <p><strong>Location:</strong> ${eventDetails.location?.displayName || "Not found"}</p>
         </div>
       `;
 
       // Create calendar event
       await createCalendarEvent(eventDetails);
-
     } catch (extractionError) {
-      console.error('Event extraction error:', extractionError);
+      console.error("Event extraction error:", extractionError);
       // Clean up error message by removing the prefix if present
       const errorMessage = extractionError.message;
-      const cleanedMessage = errorMessage.includes('Failed to extract event information:') ?
-        errorMessage.split('Failed to extract event information:')[1].trim() :
-        errorMessage;
+      const cleanedMessage = errorMessage.includes("Failed to extract event information:")
+        ? errorMessage.split("Failed to extract event information:")[1].trim()
+        : errorMessage;
 
       document.getElementById("result-content").innerHTML = `
         <div class="event-details-header">
@@ -2253,11 +2079,11 @@ async function handleCalendarEvent() {
         </div>
       `;
 
-      showNotification(`Event extraction failed: ${cleanedMessage}`, 'error');
+      showNotification(`Event extraction failed: ${cleanedMessage}`, "error");
     }
   } catch (error) {
-    console.error('Calendar event handling error:', error);
-    showNotification(`Error: ${error.message}`, 'error');
+    console.error("Calendar event handling error:", error);
+    showNotification(`Error: ${error.message}`, "error");
   } finally {
     // Hide loading and update button state
     hideLoading();
@@ -2269,7 +2095,7 @@ async function handleCalendarEvent() {
       expandButton.disabled = false;
       expandButton.classList.remove("ms-Button--disabled");
       expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-      expandButton.classList.add('ms-Button--primary');
+      expandButton.classList.add("ms-Button--primary");
 
       // Show full content container
       document.getElementById("full-content-container").style.display = "block";
@@ -2283,22 +2109,22 @@ async function updateCalendarButtonState() {
     const emailContent = await getEmailContent();
     const isCalendarEvent = await checkIfCalendarEvent(emailContent);
 
-    const calendarBtn = document.getElementById('calendar-event');
+    const calendarBtn = document.getElementById("calendar-event");
     if (calendarBtn) {
       if (isCalendarEvent) {
         calendarBtn.disabled = false;
-        calendarBtn.classList.remove('action-button--disabled');
-        calendarBtn.classList.add('action-button--primary');
-        console.log('Calendar event detected, button enabled');
+        calendarBtn.classList.remove("action-button--disabled");
+        calendarBtn.classList.add("action-button--primary");
+        console.log("Calendar event detected, button enabled");
       } else {
         calendarBtn.disabled = true;
-        calendarBtn.classList.add('action-button--disabled');
-        calendarBtn.classList.remove('action-button--primary');
-        console.log('Not a calendar event, button disabled');
+        calendarBtn.classList.add("action-button--disabled");
+        calendarBtn.classList.remove("action-button--primary");
+        console.log("Not a calendar event, button disabled");
       }
     }
   } catch (error) {
-    console.error('Error updating calendar button state:', error);
+    console.error("Error updating calendar button state:", error);
   }
 }
 
@@ -2307,24 +2133,20 @@ async function updateCalendarButtonState() {
  */
 function exportTemplatesAsMarkdown() {
   try {
-    // Get current settings
-    const savedSettings = localStorage.getItem('michael_settings');
-    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    const apiKey = (localStorage.getItem('michael_api_key') || 'Not Set'); // Get API key
-
-    // Get current date for filename
+    const settings = getSettings();
+    const templates = settings.templates || createBlankPromptTemplates();
     const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD format
+    const dateStr = now.toISOString().slice(0, 10);
 
     // Get current user information if available
-    let userInfo = '';
+    let userInfo = "";
     try {
       if (Office.context.mailbox && Office.context.mailbox.userProfile) {
         const user = Office.context.mailbox.userProfile;
         userInfo = `\n\n*Exported by: ${user.displayName} (${user.emailAddress})*`;
       }
-    } catch (err) {
-      console.log('User profile not available');
+    } catch {
+      console.log("User profile not available");
     }
 
     // Create markdown content
@@ -2333,48 +2155,37 @@ function exportTemplatesAsMarkdown() {
 
     // Add model information
     markdownContent += `## General Settings\n\n`;
-    markdownContent += `- **Model**: ${settings.model || 'gemini-1.5-flash'}\n`;
-    markdownContent += `- **Reply Model**: ${settings.replyModel || 'gemini-2.0-flash-lite'}\n`; // Add reply model
-    markdownContent += `- **Default Language**: ${settings.defaultLanguage || 'ko'}\n`;
-    markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || 'en'}\n\n`;
+    markdownContent += `- **Provider**: Z.AI GLM Coding Plan\n`;
+    markdownContent += `- **Authentication**: Outlook add-in saved setting\n`;
+    markdownContent += `- **Model**: ${settings.model || "(empty)"}\n`;
+    markdownContent += `- **Reply Model**: ${settings.replyModel || "(empty)"}\n`;
+    markdownContent += `- **Default Language**: ${settings.defaultLanguage || DEFAULT_SETTINGS.defaultLanguage}\n`;
+    markdownContent += `- **Event Title Language**: ${settings.eventTitleLanguage || DEFAULT_SETTINGS.eventTitleLanguage}\n\n`;
 
     // Add prompts
     markdownContent += `## Prompt Templates\n\n`;
 
-    // Summarize template
-    markdownContent += `### Summarize Template\n\n\`\`\`\n${
-            settings.templates && settings.templates.summarize ?
-            settings.templates.summarize :
-            DEFAULT_TEMPLATES.summarize
-        }\n\`\`\`\n\n`;
+    const exportedSections = [
+      ["Summarize Template", templates.summarize],
+      ["Translate Template", templates.translate],
+      ["Translate & Summarize Template", templates.translateSummarize],
+      ["Reply Template", templates.reply],
+      ["Quick Translate Command Template", templates.commandTranslate],
+      ["TL;DR Template", templates.tldrPrompt],
+      ["Calendar Parse Template", templates.calendarParse],
+      ["Calendar Check Template", templates.calendarCheck],
+    ];
 
-    // Translate template
-    markdownContent += `### Translate Template\n\n\`\`\`\n${
-            settings.templates && settings.templates.translate ?
-            settings.templates.translate :
-            DEFAULT_TEMPLATES.translate
-        }\n\`\`\`\n\n`;
-
-    // Translate & Summarize template
-    markdownContent += `### Translate & Summarize Template\n\n\`\`\`\n${
-            settings.templates && settings.templates.translateSummarize ?
-            settings.templates.translateSummarize :
-            DEFAULT_TEMPLATES.translateSummarize
-        }\n\`\`\`\n\n`;
-
-    // Reply template
-    markdownContent += `### Reply Template\n\n\`\`\`\n${
-            settings.templates && settings.templates.reply ?
-            settings.templates.reply :
-            DEFAULT_TEMPLATES.reply
-        }\n\`\`\`\n\n`;
+    exportedSections.forEach(([title, value]) => {
+      markdownContent += `### ${title}\n\n\`\`\`\n${value || ""}\n\`\`\`\n\n`;
+    });
 
     // Create download link
     const blob = new Blob([markdownContent], {
-      type: 'text/markdown'
+      type: "text/markdown",
     });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `michael-templates-${dateStr}.md`;
 
@@ -2388,9 +2199,9 @@ function exportTemplatesAsMarkdown() {
       URL.revokeObjectURL(url);
     }, 100);
 
-    showNotification('Templates exported successfully', 'success');
+    showNotification("Templates exported successfully", "success");
   } catch (error) {
-    console.error('Error exporting templates:', error);
-    showNotification('Failed to export templates', 'error');
+    console.error("Error exporting templates:", error);
+    showNotification("Failed to export templates", "error");
   }
 }

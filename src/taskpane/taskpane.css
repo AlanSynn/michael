@@ -995,13 +995,6 @@ html[data-font-size="large"] {
     font-weight: 500;
 }
 
-/* Specific enhancement for API key field */
-[data-theme="dark"] label[for="dropdown-api-key"] {
-    color: #ffffff;
-    font-weight: 600;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
-}
-
 /* Remove Export markdown button styles */
 /* #dropdown-export-markdown { ... } */
 /* #dropdown-export-markdown:hover { ... } */

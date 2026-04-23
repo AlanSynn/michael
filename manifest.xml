@@ -12,7 +12,7 @@
   <ProviderName>Michael [Local]</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Michael [Local]"/>
-  <Description DefaultValue="Meet, Michael. Your AI sidekick for summarizing and translating emails using Gemini AI."/>
+  <Description DefaultValue="Meet, Michael. Your AI sidekick for summarizing and translating emails with Z.AI GLM Coding Plan."/>
   <IconUrl DefaultValue="https://localhost:3000/assets/icon-black.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/michael-black.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
@@ -21,7 +21,7 @@
   <AppDomains>
     <AppDomain>https://localhost:3000</AppDomain>
     <AppDomain>https://alansynn.com</AppDomain>
-    <AppDomain>https://generativelanguage.googleapis.com</AppDomain>
+    <AppDomain>https://api.z.ai</AppDomain>
   </AppDomains>
 
   <Hosts>

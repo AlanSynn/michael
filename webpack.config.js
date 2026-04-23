@@ -4,6 +4,7 @@ const devCerts = require("office-addin-dev-certs");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const path = require("path");
+const webpack = require("webpack");
 
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://alansynn.com/michael/";
@@ -24,7 +25,7 @@ module.exports = async (env, options) => {
     entry: {
       polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
       taskpane: "./src/taskpane/taskpane.js",
-      commands: "./src/commands/commands.js"
+      commands: "./src/commands/commands.js",
     },
     output: {
       devtoolModuleFilenameTemplate: "webpack:///[resource-path]?[loaders]",
@@ -60,6 +61,12 @@ module.exports = async (env, options) => {
       ],
     },
     plugins: [
+      new webpack.DefinePlugin({
+        __ZAI_API_KEY__: JSON.stringify(process.env.ZAI_API_KEY || ""),
+        __ZAI_CODING_BASE_URL__: JSON.stringify(
+          process.env.ZAI_CODING_BASE_URL || "https://api.z.ai/api/coding/paas/v4"
+        ),
+      }),
       new HtmlWebpackPlugin({
         filename: "taskpane.html",
         template: "./src/taskpane/taskpane.html",
@@ -77,7 +84,7 @@ module.exports = async (env, options) => {
             to: "assets",
             filter: (resourcePath) => {
               return resourcePath.endsWith(".png") || resourcePath.endsWith(".svg");
-            }
+            },
           },
           {
             from: "manifest*.xml",
@@ -87,27 +94,30 @@ module.exports = async (env, options) => {
                 return content;
               } else {
                 const contentStr = content.toString();
-                console.log('Original content:', contentStr);
-                console.log('Replacing:', {
+                console.log("Original content:", contentStr);
+                console.log("Replacing:", {
                   addinDevName,
                   addinName,
                   urlDev,
-                  urlProd
+                  urlProd,
                 });
 
-                const escapedAddinDevName = addinDevName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const escapedUrlDev = urlDev.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const escapedAddinDevName = addinDevName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                const escapedUrlDev = urlDev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
                 const replaced = contentStr
                   .replace(new RegExp(escapedAddinDevName, "g"), addinName)
                   .replace(new RegExp(escapedUrlDev, "g"), urlProd);
 
-                console.log('Replaced content:', replaced);
+                console.log("Replaced content:", replaced);
                 return replaced;
               }
             },
           },
         ],
+      }),
+      new webpack.DefinePlugin({
+        __ZAI_API_KEY__: JSON.stringify(process.env.ZAI_API_KEY || ""),
       }),
     ],
     devServer: {
@@ -116,7 +126,10 @@ module.exports = async (env, options) => {
       },
       server: {
         type: "https",
-        options: env.WEBPACK_BUILD || options.https !== undefined ? options.https : await getHttpsOptions(),
+        options:
+          env.WEBPACK_BUILD || options.https !== undefined
+            ? options.https
+            : await getHttpsOptions(),
       },
       port: process.env.npm_package_config_dev_server_port || 3000,
       historyApiFallback: true,

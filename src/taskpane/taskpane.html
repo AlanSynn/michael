@@ -1,291 +1,453 @@
 <!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. -->
 <!-- This file shows how to design a first-run page that provides a welcome screen to the user about the features of the add-in. -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Read it for me, Michael</title>
 
     <!-- Office JavaScript API -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    <script
+      type="text/javascript"
+      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
+    ></script>
 
     <!-- For more information on Fluent UI, visit https://developer.microsoft.com/fluentui#/. -->
-    <link rel="stylesheet"
-        href="https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/office-ui-fabric-core/11.1.0/css/fabric.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/office-ui-fabric-core/11.1.0/css/fabric.min.css"
+    />
 
     <!-- Template styles -->
     <link href="taskpane.css" rel="stylesheet" type="text/css" />
-</head>
 
-<body class="ms-font-m ms-Fabric"
-    style="font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+    <!-- Taskpane-local styles for model discovery UX -->
+    <style>
+      .settings-help-text {
+        display: block;
+        margin-top: 6px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #605e5c;
+      }
+
+      .model-catalog-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+
+      .model-catalog-status {
+        font-size: 12px;
+        line-height: 1.4;
+        color: #605e5c;
+      }
+
+      .model-catalog-status[data-tone="success"] {
+        color: #107c10;
+      }
+
+      .model-catalog-status[data-tone="warning"] {
+        color: #a4262c;
+      }
+
+      .settings-inline-button {
+        min-width: 120px;
+      }
+
+      body[data-theme="dark"] .settings-help-text,
+      body[data-theme="dark"] .model-catalog-status {
+        color: #c8c6c4;
+      }
+
+      body[data-theme="dark"] .model-catalog-status[data-tone="success"] {
+        color: #92c353;
+      }
+
+      body[data-theme="dark"] .model-catalog-status[data-tone="warning"] {
+        color: #f1707b;
+      }
+    </style>
+  </head>
+
+  <body
+    class="ms-font-m ms-Fabric"
+    style="
+      font-family:
+        &quot;Segoe UI&quot;,
+        -apple-system,
+        BlinkMacSystemFont,
+        &quot;Roboto&quot;,
+        &quot;Oxygen&quot;,
+        &quot;Ubuntu&quot;,
+        &quot;Cantarell&quot;,
+        &quot;Fira Sans&quot;,
+        &quot;Droid Sans&quot;,
+        &quot;Helvetica Neue&quot;,
+        sans-serif;
+    "
+  >
     <header class="ms-welcome__header">
-        <div class="header-brand">
-            <span class="brand-name-text">Michael</span>
-            <div id="dev-badge" class="dev-badge" style="display: none;">DEV</div>
-        </div>
+      <div class="header-brand">
+        <span class="brand-name-text">Michael</span>
+        <div id="dev-badge" class="dev-badge" style="display: none">DEV</div>
+      </div>
 
-        <div class="header-actions">
-            <button id="summarize" class="action-button" title="Summarize">
-                <i class="ms-Icon ms-Icon--EditNote" aria-hidden="true"></i>
-                <span>Summarize</span>
-            </button>
-            <button id="translate" class="action-button" title="Translate">
-                <i class="ms-Icon ms-Icon--Translate" aria-hidden="true"></i>
-                <span>Translate</span>
-            </button>
-            <button id="translate-summarize" class="action-button" title="Translate & Summarize">
-                <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
-                <span>T&S</span>
-            </button>
-            <button id="calendar-event" class="action-button" title="Add to Calendar" disabled>
-                <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
-                <span>Calendar</span>
-            </button>
-            <button id="settings-toggle" class="action-button" aria-label="Settings" title="Settings">
-                <i class="ms-Icon ms-Icon--Settings" aria-hidden="true"></i>
-                <span>Settings</span>
-            </button>
-        </div>
+      <div class="header-actions">
+        <button id="summarize" class="action-button" title="Summarize">
+          <i class="ms-Icon ms-Icon--EditNote" aria-hidden="true"></i>
+          <span>Summarize</span>
+        </button>
+        <button id="translate" class="action-button" title="Translate">
+          <i class="ms-Icon ms-Icon--Translate" aria-hidden="true"></i>
+          <span>Translate</span>
+        </button>
+        <button id="translate-summarize" class="action-button" title="Translate & Summarize">
+          <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
+          <span>T&S</span>
+        </button>
+        <button id="calendar-event" class="action-button" title="Add to Calendar" disabled>
+          <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
+          <span>Calendar</span>
+        </button>
+        <button id="settings-toggle" class="action-button" aria-label="Settings" title="Settings">
+          <i class="ms-Icon ms-Icon--Settings" aria-hidden="true"></i>
+          <span>Settings</span>
+        </button>
+      </div>
     </header>
 
-    <section id="sideload-msg" class="ms-welcome__main" style="text-align: center; padding-top: 20px;">
-        <!-- Correct default src path -->
-        <img id="sideload-logo" src="../../assets/meet-michael-black.png" alt="Meet Michael Logo"
-            style="max-width: 150px; margin-bottom: 15px;">
-        <p class="ms-font-l">Please sideload your add-in.</p>
+    <section
+      id="sideload-msg"
+      class="ms-welcome__main"
+      style="text-align: center; padding-top: 20px"
+    >
+      <!-- Correct default src path -->
+      <img
+        id="sideload-logo"
+        src="../../assets/meet-michael-black.png"
+        alt="Meet Michael Logo"
+        style="max-width: 150px; margin-bottom: 15px"
+      />
+      <p class="ms-font-l">Please sideload your add-in.</p>
     </section>
-    <main id="app-body" class="ms-welcome__main" style="display: none;">
-        <!-- Landing screen - shown when no content is displayed -->
-        <section id="landing-screen">
-            <div class="landing-content">
-                <!-- Correct default src path -->
-                <img id="landing-logo-main" src="../../assets/meet-michael-black.png" alt="Meet Michael Logo"
-                    class="landing-logo" />
-                <h2 class="landing-title">Read it for me, Michael</h2>
-                <p class="landing-description">Select an email and use the buttons above to:</p>
-                <div class="landing-features">
-                    <div class="feature-item">
-                        <i class="ms-Icon ms-Icon--EditNote" aria-hidden="true"></i>
-                        <span>Summarize the email</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="ms-Icon ms-Icon--Translate" aria-hidden="true"></i>
-                        <span>Translate to your language</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
-                        <span>Translate & Summarize</span>
-                    </div>
-                    <div class="feature-item">
-                        <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
-                        <span>Add to Calendar</span>
-                    </div>
-                </div>
+    <main id="app-body" class="ms-welcome__main" style="display: none">
+      <!-- Landing screen - shown when no content is displayed -->
+      <section id="landing-screen">
+        <div class="landing-content">
+          <!-- Correct default src path -->
+          <img
+            id="landing-logo-main"
+            src="../../assets/meet-michael-black.png"
+            alt="Meet Michael Logo"
+            class="landing-logo"
+          />
+          <h2 class="landing-title">Read it for me, Michael</h2>
+          <p class="landing-description">Select an email and use the buttons above to:</p>
+          <div class="landing-features">
+            <div class="feature-item">
+              <i class="ms-Icon ms-Icon--EditNote" aria-hidden="true"></i>
+              <span>Summarize the email</span>
             </div>
-        </section>
-
-        <section id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p id="loading-message">Processing...</p>
-        </section>
-
-        <section id="result-section" style="display: none;">
-            <div class="ms-TextField result-container">
-                <div class="result-summary">
-                    <h3 class="tldr-heading">TL;DR</h3>
-                    <div id="tldr-content" class="markdown-body"></div>
-                    <button id="expand-content" class="ms-Button">
-                        <span class="ms-Button-label">Show Full Content</span>
-                    </button>
-                </div>
-                <div id="full-content-container" style="display: none;">
-                    <div id="result-content" class="markdown-body"></div>
-                </div>
-                <div class="result-actions">
-                    <button id="copy-result" class="ms-Button ms-Button--primary">
-                        <span class="ms-Button-label">Copy to Clipboard</span>
-                    </button>
-                    <button id="generate-reply" class="ms-Button">
-                        <span class="ms-Button-label">Generate Reply</span>
-                    </button>
-                    <button id="copy-reply" class="ms-Button" style="display: none;">
-                        <span class="ms-Button-label">Copy Reply</span>
-                    </button>
-                    <span id="copy-reply-status" class="copy-status"></span>
-                    <span id="copy-status" class="copy-status"></span>
-                </div>
+            <div class="feature-item">
+              <i class="ms-Icon ms-Icon--Translate" aria-hidden="true"></i>
+              <span>Translate to your language</span>
             </div>
-        </section>
+            <div class="feature-item">
+              <i class="ms-Icon ms-Icon--ReadingMode" aria-hidden="true"></i>
+              <span>Translate & Summarize</span>
+            </div>
+            <div class="feature-item">
+              <i class="ms-Icon ms-Icon--Calendar" aria-hidden="true"></i>
+              <span>Add to Calendar</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>Built with <span class="heart">❤️</span> by Alan Synn <span id="footer-dev-badge" class="dev-badge"
-                    style="display: none;">DEV</span></p>
-        </footer>
+      <section id="loading" style="display: none">
+        <div class="spinner"></div>
+        <p id="loading-message">Processing...</p>
+      </section>
+
+      <section id="result-section" style="display: none">
+        <div class="ms-TextField result-container">
+          <div class="result-summary">
+            <h3 class="tldr-heading">TL;DR</h3>
+            <div id="tldr-content" class="markdown-body"></div>
+            <button id="expand-content" class="ms-Button">
+              <span class="ms-Button-label">Show Full Content</span>
+            </button>
+          </div>
+          <div id="full-content-container" style="display: none">
+            <div id="result-content" class="markdown-body"></div>
+          </div>
+          <div class="result-actions">
+            <button id="copy-result" class="ms-Button ms-Button--primary">
+              <span class="ms-Button-label">Copy to Clipboard</span>
+            </button>
+            <button id="generate-reply" class="ms-Button">
+              <span class="ms-Button-label">Generate Reply</span>
+            </button>
+            <button id="copy-reply" class="ms-Button" style="display: none">
+              <span class="ms-Button-label">Copy Reply</span>
+            </button>
+            <span id="copy-reply-status" class="copy-status"></span>
+            <span id="copy-status" class="copy-status"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <p>
+          Built with <span class="heart">❤️</span> by Alan Synn
+          <span id="footer-dev-badge" class="dev-badge" style="display: none">DEV</span>
+        </p>
+      </footer>
     </main>
 
     <!-- New Settings View -->
-    <div id="settings-view" class="settings-view" style="display: none;">
-        <div class="settings-header">
-            <h2>Settings</h2>
-            <button id="close-settings-view" class="ms-Button" aria-label="Close Settings">
-                <i class="ms-Icon ms-Icon--Cancel" aria-hidden="true"></i>
+    <div id="settings-view" class="settings-view" style="display: none">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button id="close-settings-view" class="ms-Button" aria-label="Close Settings">
+          <i class="ms-Icon ms-Icon--Cancel" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="settings-tabs">
+        <button class="settings-tab-button active" data-tab="tab-general">General</button>
+        <button class="settings-tab-button" data-tab="tab-templates">Templates</button>
+        <button class="settings-tab-button" data-tab="tab-developer">Developer</button>
+      </div>
+      <div class="settings-content">
+        <!-- General Tab Content -->
+        <div id="tab-general" class="settings-tab-content active">
+          <div class="settings-group">
+            <label>Z.AI Authentication:</label>
+            <input
+              type="password"
+              id="dropdown-api-key"
+              class="ms-TextField-field"
+              placeholder="Enter API key"
+            />
+            <p id="dropdown-auth-status">Authentication source: ZAI_API_KEY not checked yet.</p>
+            <span class="settings-help-text"
+              >Saved in Outlook add-in settings. Coding Plan requests target
+              <code>https://api.z.ai/api/coding/paas/v4</code>.</span
+            >
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-model">Primary Model:</label>
+            <select id="dropdown-model" class="ms-Dropdown-select"></select>
+            <div class="model-catalog-toolbar">
+              <span
+                id="dropdown-model-status"
+                class="model-catalog-status"
+                role="status"
+                aria-live="polite"
+                >Model catalog has not been refreshed yet.</span
+              >
+              <button
+                id="dropdown-refresh-models"
+                type="button"
+                class="ms-Button settings-inline-button"
+              >
+                Refresh models
+              </button>
+            </div>
+            <span id="model-catalog-meta" class="settings-help-text"
+              >Auto-refreshes on load and whenever the settings view opens.</span
+            >
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-language">Default Language:</label>
+            <select id="dropdown-language" class="ms-Dropdown-select">
+              <option value="ko">Korean</option>
+              <option value="en">English</option>
+              <option value="ja">Japanese</option>
+              <option value="zh_cn">Chinese</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-event-title-language">Event Title Language:</label>
+            <select id="dropdown-event-title-language" class="ms-Dropdown-select">
+              <option value="en">English</option>
+              <option value="ko">Korean</option>
+              <option value="ja">Japanese</option>
+              <option value="zh_cn">Chinese</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-theme">Theme:</label>
+            <select id="dropdown-theme" class="ms-Dropdown-select">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-font-size">Font Size:</label>
+            <select id="dropdown-font-size" class="ms-Dropdown-select">
+              <option value="small">Small</option>
+              <option value="medium">Medium</option>
+              <option value="large">Large</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-tldr-mode">TL;DR Mode:</label>
+            <select id="dropdown-tldr-mode" class="ms-Dropdown-select">
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-show-reply">Show Reply Button:</label>
+            <select id="dropdown-show-reply" class="ms-Dropdown-select">
+              <option value="true">Show</option>
+              <option value="false">Hide</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-reply-model">Reply Model:</label>
+            <select id="dropdown-reply-model" class="ms-Dropdown-select"></select>
+            <span class="settings-help-text"
+              >Shares the same Z.AI catalog as the primary model selector.</span
+            >
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-autorun">Auto-Run:</label>
+            <select id="dropdown-autorun" class="ms-Dropdown-select">
+              <option value="false">Disabled</option>
+              <option value="true">Enabled</option>
+            </select>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-autorun-option">Auto-Run Option:</label>
+            <select id="dropdown-autorun-option" class="ms-Dropdown-select">
+              <option value="summarize">Summarize</option>
+              <option value="translate">Translate</option>
+              <option value="translateAndSummarize">Translate & Summarize</option>
+              <option value="reply">Generate Reply</option>
+            </select>
+          </div>
+        </div>
+        <!-- Templates Tab Content -->
+        <div id="tab-templates" class="settings-tab-content">
+          <div class="settings-group">
+            <label for="dropdown-summarize-template">Summarize Template:</label>
+            <textarea
+              id="dropdown-summarize-template"
+              class="ms-TextField-field"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-translate-template">Translate Template:</label>
+            <textarea
+              id="dropdown-translate-template"
+              class="ms-TextField-field"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-translate-summarize-template"
+              >Translate & Summarize Template:</label
+            >
+            <textarea
+              id="dropdown-translate-summarize-template"
+              class="ms-TextField-field"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-reply-template">Reply Template:</label>
+            <textarea id="dropdown-reply-template" class="ms-TextField-field" rows="5"></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-command-translate-template">Quick Translate Command Template:</label>
+            <textarea
+              id="dropdown-command-translate-template"
+              class="ms-TextField-field"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-tldr-template">TL;DR Template:</label>
+            <textarea id="dropdown-tldr-template" class="ms-TextField-field" rows="5"></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-calendar-parse-template">Calendar Parse Template:</label>
+            <textarea
+              id="dropdown-calendar-parse-template"
+              class="ms-TextField-field"
+              rows="7"
+            ></textarea>
+          </div>
+          <div class="settings-group">
+            <label for="dropdown-calendar-check-template">Calendar Check Template:</label>
+            <textarea
+              id="dropdown-calendar-check-template"
+              class="ms-TextField-field"
+              rows="5"
+            ></textarea>
+          </div>
+          <div class="template-actions">
+            <button id="dropdown-reset-templates" class="ms-Button">Load Saved Defaults</button>
+            <button id="dropdown-load-builtins" class="ms-Button">Load Built-in Defaults</button>
+            <button id="dropdown-save-template-defaults" class="ms-Button">
+              Save as Defaults
             </button>
+            <button id="dropdown-clear-templates" class="ms-Button">Clear Templates</button>
+            <button id="dropdown-copy-templates" class="ms-Button">Copy All</button>
+            <button id="dropdown-export-markdown" class="ms-Button">Export All</button>
+          </div>
         </div>
-        <div class="settings-tabs">
-            <button class="settings-tab-button active" data-tab="tab-general">General</button>
-            <button class="settings-tab-button" data-tab="tab-templates">Templates</button>
-            <button class="settings-tab-button" data-tab="tab-developer">Developer</button>
+        <!-- Developer Tab Content -->
+        <div id="tab-developer" class="settings-tab-content">
+          <div class="settings-group">
+            <label for="dropdown-dev-mode">Dev Mode:</label>
+            <select id="dropdown-dev-mode" class="ms-Dropdown-select">
+              <option value="false">Disabled</option>
+              <option value="true">Enabled</option>
+            </select>
+          </div>
+          <div class="settings-group" id="dev-server-group" style="display: none">
+            <label for="dropdown-dev-server">Dev Server URL:</label>
+            <input
+              type="text"
+              id="dropdown-dev-server"
+              class="ms-TextField-field"
+              placeholder="Enter dev server URL"
+            />
+          </div>
         </div>
-        <div class="settings-content">
-            <!-- General Tab Content -->
-            <div id="tab-general" class="settings-tab-content active">
-                <div class="settings-group">
-                    <label for="dropdown-api-key">Gemini API Key:</label>
-                    <input type="password" id="dropdown-api-key" class="ms-TextField-field"
-                        placeholder="Enter your API key">
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-model">Model:</label>
-                    <input type="text" id="dropdown-model" class="ms-TextField-field"
-                        placeholder="Enter model name (e.g., gemini-1.5-flash)">
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-language">Default Language:</label>
-                    <select id="dropdown-language" class="ms-Dropdown-select">
-                        <option value="ko">Korean</option>
-                        <option value="en">English</option>
-                        <option value="ja">Japanese</option>
-                        <option value="zh_cn">Chinese</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-event-title-language">Event Title Language:</label>
-                    <select id="dropdown-event-title-language" class="ms-Dropdown-select">
-                        <option value="en">English</option>
-                        <option value="ko">Korean</option>
-                        <option value="ja">Japanese</option>
-                        <option value="zh_cn">Chinese</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="it">Italian</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-theme">Theme:</label>
-                    <select id="dropdown-theme" class="ms-Dropdown-select">
-                        <option value="system">System</option>
-                        <option value="light">Light</option>
-                        <option value="dark">Dark</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-font-size">Font Size:</label>
-                    <select id="dropdown-font-size" class="ms-Dropdown-select">
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-tldr-mode">TL;DR Mode:</label>
-                    <select id="dropdown-tldr-mode" class="ms-Dropdown-select">
-                        <option value="true">Enabled</option>
-                        <option value="false">Disabled</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-show-reply">Show Reply Button:</label>
-                    <select id="dropdown-show-reply" class="ms-Dropdown-select">
-                        <option value="true">Show</option>
-                        <option value="false">Hide</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-reply-model">Reply Model:</label>
-                    <select id="dropdown-reply-model" class="ms-Dropdown-select">
-                        <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-autorun">Auto-Run:</label>
-                    <select id="dropdown-autorun" class="ms-Dropdown-select">
-                        <option value="false">Disabled</option>
-                        <option value="true">Enabled</option>
-                    </select>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-autorun-option">Auto-Run Option:</label>
-                    <select id="dropdown-autorun-option" class="ms-Dropdown-select">
-                        <option value="summarize">Summarize</option>
-                        <option value="translate">Translate</option>
-                        <option value="translateAndSummarize">Translate & Summarize</option>
-                        <option value="reply">Generate Reply</option>
-                    </select>
-                </div>
-            </div>
-            <!-- Templates Tab Content -->
-            <div id="tab-templates" class="settings-tab-content">
-                <div class="settings-group">
-                    <label for="dropdown-summarize-template">Summarize Template:</label>
-                    <textarea id="dropdown-summarize-template" class="ms-TextField-field" rows="5"></textarea>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-translate-template">Translate Template:</label>
-                    <textarea id="dropdown-translate-template" class="ms-TextField-field" rows="5"></textarea>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-translate-summarize-template">Translate & Summarize Template:</label>
-                    <textarea id="dropdown-translate-summarize-template" class="ms-TextField-field" rows="5"></textarea>
-                </div>
-                <div class="settings-group">
-                    <label for="dropdown-reply-template">Reply Template:</label>
-                    <textarea id="dropdown-reply-template" class="ms-TextField-field" rows="5"></textarea>
-                </div>
-                <div class="template-actions">
-                    <button id="dropdown-reset-templates" class="ms-Button">Reset Templates</button>
-                    <button id="dropdown-copy-templates" class="ms-Button">Copy All</button>
-                    <button id="dropdown-export-markdown" class="ms-Button">Export All</button>
-                </div>
-            </div>
-            <!-- Developer Tab Content -->
-            <div id="tab-developer" class="settings-tab-content">
-                <div class="settings-group">
-                    <label for="dropdown-dev-mode">Dev Mode:</label>
-                    <select id="dropdown-dev-mode" class="ms-Dropdown-select">
-                        <option value="false">Disabled</option>
-                        <option value="true">Enabled</option>
-                    </select>
-                </div>
-                <div class="settings-group" id="dev-server-group" style="display: none;">
-                    <label for="dropdown-dev-server">Dev Server URL:</label>
-                    <input type="text" id="dropdown-dev-server" class="ms-TextField-field"
-                        placeholder="Enter dev server URL">
-                </div>
-            </div>
-        </div>
-        <div class="settings-footer-actions">
-            <button id="dropdown-reset-all" class="ms-Button">Reset All Settings</button>
-            <button id="dropdown-save-settings" class="ms-Button ms-Button--primary">Save Settings</button>
-        </div>
+      </div>
+      <div class="settings-footer-actions">
+        <button id="dropdown-reset-all" class="ms-Button">Reset All Settings</button>
+        <button id="dropdown-save-settings" class="ms-Button ms-Button--primary">
+          Save Settings
+        </button>
+      </div>
     </div>
 
     <!-- marked.js (CDN) for markdown rendering -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- Add taskpane.js include -->
     <script type="text/javascript" src="taskpane.js"></script>
-</body>
-
+  </body>
 </html>
