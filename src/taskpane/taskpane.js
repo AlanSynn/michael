@@ -14,6 +14,9 @@ import {
   PROVIDER_MESSAGES,
   TEMPLATE_KEYS,
 } from "./prompt-templates";
+import { isDarkTheme } from "./theme";
+import { getLanguageText } from "./language";
+import { getFontSizeValue } from "./fonts";
 
 const TYPES = {
   SUMMARIZE: 0,
@@ -655,40 +658,6 @@ function applyCurrentTheme() {
 }
 
 /**
- * Determine if a color is dark by converting it to RGB and calculating perceived brightness
- * @param {string} color - Hex color code
- * @returns {boolean} - True if the color is dark
- */
-function isDarkTheme(color) {
-  // If color is undefined or not a string, default to light theme
-  if (!color || typeof color !== "string") {
-    return false;
-  }
-
-  try {
-    // Convert hex to RGB
-    color = color.replace("#", "");
-    const r = parseInt(color.substr(0, 2), 16);
-    const g = parseInt(color.substr(2, 2), 16);
-    const b = parseInt(color.substr(4, 2), 16);
-
-    // Check if we got valid RGB values
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      return false;
-    }
-
-    // Calculate perceived brightness using the formula: (0.299*R + 0.587*G + 0.114*B)
-    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-
-    // If brightness is less than 128, consider it dark
-    return brightness < 128;
-  } catch (error) {
-    console.error("Error calculating theme brightness:", error);
-    return false;
-  }
-}
-
-/**
  * Handle Office theme change event
  */
 function onSettingsChanged() {
@@ -993,27 +962,6 @@ async function generateTldrContent(prompt, apiKey, language = "Korean", modelOve
 }
 
 // Get language display text
-function getLanguageText(languageCode) {
-  switch (languageCode) {
-    case "es":
-      return "Spanish";
-    case "fr":
-      return "French";
-    case "de":
-      return "German";
-    case "it":
-      return "Italian";
-    case "ja":
-      return "Japanese";
-    case "ko":
-      return "Korean";
-    case "zh_cn":
-      return "Chinese";
-    default:
-      return "English";
-  }
-}
-
 // Get the configured Z.AI API key from Outlook add-in settings
 function getApiKey() {
   const input = document.getElementById("dropdown-api-key");
@@ -1738,22 +1686,6 @@ function setTheme(theme) {
 function setFontSize(size) {
   const root = document.documentElement;
   root.style.setProperty("--result-font-size", getFontSizeValue(size));
-}
-
-/**
- * Get font size value based on size name
- */
-function getFontSizeValue(size) {
-  switch (size) {
-    case "small":
-      return "0.875rem";
-    case "medium":
-      return "1rem";
-    case "large":
-      return "1.125rem";
-    default:
-      return "1rem";
-  }
 }
 
 /**
