@@ -240,6 +240,8 @@ async function fetchAvailableModels(options = {}) {
 
 export {
   FALLBACK_ZAI_MODELS,
+  dedupeModels,
+  extractModelNames,
   fetchAvailableModels,
   generateText,
   getDefaultZaiModel,
@@ -248,4 +250,6 @@ export {
   getZaiApiKey,
   getZaiBaseUrl,
   hasZaiApiKey,
+  normalizeModelName,
+  normalizeTextContent,
 };

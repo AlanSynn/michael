@@ -3,32 +3,27 @@
  * See LICENSE in the project root for license information.
  */
 
-/* global Office, console, require */
+/* global Office, console */
 
-const { ZAI_DEFAULT_MODEL } = require("../shared/zaiConfig");
-const { executeZaiChatCompletion } = require("../shared/zaiClient");
+// Function-file for the "Quick Translate" ribbon command. Now imports the same
+// shared Z.AI client, language map, and prompt builder as the taskpane, so there
+// is a single provider implementation (the prior CJS zaiClient/zaiConfig were
+// ~40% duplicated).
+import { generateText, getDefaultZaiModel } from "../shared/zai.js";
+import { getLanguageText } from "../taskpane/language.js";
+import { fillTemplate } from "../taskpane/prompts.js";
+import { DEFAULT_PROMPT_TEMPLATES } from "../taskpane/prompt-templates.js";
 
 const SETTINGS_KEY = "michael_settings";
-const COMMAND_TRANSLATE_TEMPLATE_FALLBACK = `
-Translate the email below into {language}.
-
-Requirements:
-- Return only the translated email body.
-- Preserve meaning, tone, names, dates, numbers, and paragraph structure.
-- Do not add a summary, bullets, or commentary.
-
-Subject: {subject}
-Content:
-{content}`;
 
 Office.onReady(() => {
-  // Office is ready
+  // Office is ready.
 });
 
 /**
- * Handles the Add-in Command button click.
- * Translates the entire email body using the saved Outlook settings and inserts it at the cursor.
- * @param {Office.AddinCommands.Event} event The event object.
+ * Handle the Quick Translate command: translate the whole email body using the
+ * saved Outlook settings and insert the translation at the cursor.
+ * @param {Office.AddinCommands.Event} event
  */
 async function action(event) {
   const settings = getSavedSettings();
@@ -47,11 +42,12 @@ async function action(event) {
   try {
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
-    const prompt = template
-      .replace("{subject}", subject)
-      .replace("{content}", emailContent)
-      .replace("{language}", targetLanguage);
-    const translatedBody = await generateContent(prompt, model, apiKey);
+    const prompt = fillTemplate(template, {
+      subject,
+      content: emailContent,
+      language: targetLanguage,
+    });
+    const translatedBody = await generateText(prompt, { apiKey, model, temperature: 0.3 });
 
     await replaceSelectionWithText(translatedBody);
 
@@ -67,7 +63,9 @@ async function action(event) {
 
 Office.actions.associate("action", action);
 
-async function replaceSelectionWithText(textToInsert) {
+// --- mailbox helpers (function-file context) --------------------------------
+
+function replaceSelectionWithText(textToInsert) {
   return new Promise((resolve, reject) => {
     Office.context.mailbox.item.body.setSelectedDataAsync(
       textToInsert,
@@ -78,37 +76,26 @@ async function replaceSelectionWithText(textToInsert) {
           reject(new Error(`Failed to insert/replace text: ${asyncResult.error.message}`));
           return;
         }
-
         resolve();
       }
     );
   });
 }
 
-async function getEmailContent() {
+function getEmailContent() {
   return new Promise((resolve, reject) => {
     Office.context.mailbox.item.body.getAsync(Office.CoercionType.Text, (result) => {
       if (result.status === Office.AsyncResultStatus.Succeeded) {
         resolve(result.value.trim());
         return;
       }
-
       console.error("Failed to get email body as text:", result.error);
       reject(new Error("Failed to get email content."));
     });
   });
 }
 
-async function generateContent(prompt, modelName, apiKey) {
-  const result = await executeZaiChatCompletion({
-    apiKey,
-    userPrompt: prompt,
-    model: modelName,
-    temperature: 0.3,
-  });
-
-  return result.text;
-}
+// --- saved-settings readers -------------------------------------------------
 
 function getSavedSettings() {
   try {
@@ -116,7 +103,6 @@ function getSavedSettings() {
     if (!rawValue || typeof rawValue !== "string") {
       return {};
     }
-
     const parsed = JSON.parse(rawValue);
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch (error) {
@@ -131,7 +117,7 @@ function getSavedApiKey(settings) {
 
 function getSavedModel(settings) {
   const configuredModel = typeof settings?.model === "string" ? settings.model.trim() : "";
-  return configuredModel || ZAI_DEFAULT_MODEL;
+  return configuredModel || getDefaultZaiModel();
 }
 
 function getSavedCommandTranslateTemplate(settings) {
@@ -141,32 +127,13 @@ function getSavedCommandTranslateTemplate(settings) {
       : "";
 
   if (!configuredTemplate) {
-    return COMMAND_TRANSLATE_TEMPLATE_FALLBACK.trim();
+    return DEFAULT_PROMPT_TEMPLATES.commandTranslate.trim();
   }
 
   return configuredTemplate;
 }
 
-function getLanguageText(languageCode) {
-  switch (languageCode) {
-    case "es":
-      return "Spanish";
-    case "fr":
-      return "French";
-    case "de":
-      return "German";
-    case "it":
-      return "Italian";
-    case "ja":
-      return "Japanese";
-    case "ko":
-      return "Korean";
-    case "zh_cn":
-      return "Chinese";
-    default:
-      return "English";
-  }
-}
+// --- notifications ----------------------------------------------------------
 
 function showProcessingNotification(message) {
   Office.context.mailbox.item.notificationMessages.replaceAsync("ProcessingNotification", {
@@ -186,9 +153,7 @@ function showSuccessNotification(message, event) {
       icon: "Icon.80x80",
       persistent: true,
     },
-    (asyncResult) => {
-      handleNotificationResult(asyncResult, event, "success");
-    }
+    (asyncResult) => handleNotificationResult(asyncResult, event, "success")
   );
 }
 
@@ -201,9 +166,7 @@ function showErrorNotification(message, event) {
       icon: "Icon.80x80",
       persistent: true,
     },
-    (asyncResult) => {
-      handleNotificationResult(asyncResult, event, "error");
-    }
+    (asyncResult) => handleNotificationResult(asyncResult, event, "error")
   );
 }
 
