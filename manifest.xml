@@ -111,7 +111,7 @@
       </bt:LongStrings>
     </Resources>
 
-    <!-- 고정 작업창 지원을 위한 VersionOverrides 1.1 추가 -->
+    <!-- VersionOverrides 1.1 added for pinned taskpane support -->
     <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
       <Requirements>
         <bt:Sets DefaultMinVersion="1.3">
