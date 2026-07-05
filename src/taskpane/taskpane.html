@@ -11,12 +11,15 @@
 
     <!--
       Content-Security-Policy: defense-in-depth. marked + DOMPurify are bundled
-      (not CDN), so only Office.js is loaded externally. connect-src locks
-      outbound requests to the Z.AI API. script-src has no 'unsafe-inline'.
+      (not CDN). Office.js is loaded from appsforoffice.microsoft.com and itself
+      loads MicrosoftAjax.js from ajax.aspnetcdn.com, so both script CDNs must be
+      allowed or office.js fails to initialize inside the host. office.js also
+      POSTs telemetry to browser.pipe.aria.microsoft.com, which connect-src must
+      allow or it logs CSP errors. script-src has no 'unsafe-inline'.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com; style-src 'self' 'unsafe-inline' https://res-1.cdn.office.net; img-src 'self' data: https://res-1.cdn.office.net; font-src 'self' https://res-1.cdn.office.net; connect-src 'self' https://api.z.ai; base-uri 'none'; object-src 'none';"
+      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com https://ajax.aspnetcdn.com; style-src 'self' 'unsafe-inline' https://res-1.cdn.office.net; img-src 'self' data: https://res-1.cdn.office.net; font-src 'self' https://res-1.cdn.office.net; connect-src 'self' https://api.z.ai https://browser.pipe.aria.microsoft.com; base-uri 'none'; object-src 'none';"
     />
 
     <!-- Office JavaScript API -->

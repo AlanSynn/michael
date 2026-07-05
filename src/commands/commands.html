@@ -9,12 +9,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <!--
       Content-Security-Policy: defense-in-depth, mirroring taskpane.html. The
-      function-file loads only office.js (CDN) + commands.js (self); outbound
-      calls are locked to the Z.AI API. No 'unsafe-inline' scripts.
+      function-file loads office.js (appsforoffice.microsoft.com), which itself
+      loads MicrosoftAjax.js from ajax.aspnetcdn.com and POSTs telemetry to
+      browser.pipe.aria.microsoft.com — all must be allowed. No 'unsafe-inline'.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com; connect-src 'self' https://api.z.ai; base-uri 'none'; object-src 'none';"
+      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com https://ajax.aspnetcdn.com; connect-src 'self' https://api.z.ai https://browser.pipe.aria.microsoft.com; base-uri 'none'; object-src 'none';"
     />
 
     <!-- Office JavaScript API -->

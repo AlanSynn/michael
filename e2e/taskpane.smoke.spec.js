@@ -64,6 +64,63 @@ test.describe("static smoke (no Office host)", () => {
     const bundle = await page.locator("script[src*='taskpane.js']").count();
     expect(bundle).toBeGreaterThanOrEqual(1);
   });
+
+  // Regression guard for the production CSP bug: office.js
+  // (appsforoffice.microsoft.com) dynamically injects MicrosoftAjax.js from
+  // ajax.aspnetcdn.com when running inside the real Outlook host. That load
+  // cannot be triggered headlessly (office.js gates it on host-only signals),
+  // so the smoke tests above never reached the code path and stayed green while
+  // prod broke. Pinning the allowlist directly is the only deterministic guard.
+  test("CSP script-src allowlist covers every domain office.js needs at runtime", async ({ page }) => {
+    await page.goto("/taskpane.html", { waitUntil: "load" });
+
+    // Read the CSP from the SERVED page so this also catches build/HTML
+    // pipeline regressions, not just source edits.
+    const csp = await page.evaluate(() => {
+      const meta = Array.from(document.querySelectorAll('meta[http-equiv]')).find(
+        (m) => m.getAttribute("http-equiv").toLowerCase() === "content-security-policy"
+      );
+      return meta ? meta.getAttribute("content") : null;
+    });
+    expect(csp, "taskpane.html must declare a Content-Security-Policy meta tag").toBeTruthy();
+
+    // Parse CSP into { directive: [sources...] }. Per spec, an absent script-src
+    // falls back to default-src.
+    const directives = {};
+    for (const part of csp.split(";")) {
+      const tokens = part.trim().split(/\s+/).filter(Boolean);
+      if (tokens.length) directives[tokens[0]] = tokens.slice(1);
+    }
+    const scriptSrc = directives["script-src"] ?? directives["default-src"] ?? [];
+
+    const requiredScriptOrigins = [
+      "https://appsforoffice.microsoft.com", // office.js itself
+      "https://ajax.aspnetcdn.com", // MicrosoftAjax.js, injected by office.js
+    ];
+    const directiveName = directives["script-src"] ? "script-src" : "default-src";
+    for (const origin of requiredScriptOrigins) {
+      expect(
+        scriptSrc,
+        `CSP ${directiveName} must allow ${origin} (required by office.js at runtime). ` +
+          `Actual: [${scriptSrc.join(", ")}]`
+      ).toContain(origin);
+    }
+
+    // connect-src must allow the app's API host AND office.js's telemetry
+    // endpoint (office.js POSTs ARIA telemetry to browser.pipe.aria.microsoft.com;
+    // blocking it does not break function but spams the console with CSP errors).
+    const connectSrc = directives["connect-src"] ?? directives["default-src"] ?? [];
+    const requiredConnectOrigins = [
+      "https://api.z.ai", // the add-in's Z.AI backend
+      "https://browser.pipe.aria.microsoft.com", // office.js ARIA telemetry
+    ];
+    for (const origin of requiredConnectOrigins) {
+      expect(
+        connectSrc,
+        `CSP connect-src must allow ${origin}. Actual: [${connectSrc.join(", ")}]`
+      ).toContain(origin);
+    }
+  });
 });
 
 // Intercepts the office.js CDN request and fulfills it with a stub that defines
