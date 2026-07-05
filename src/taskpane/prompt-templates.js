@@ -180,7 +180,7 @@ Required JSON format:
 Important notes:
 1. Convert dates and times to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
 2. Email addresses must be valid
-3. Set the JSON "timeZone" to the local timezone shown in the current date context above (fall back to "Asia/Seoul" only if it is unknown)
+3. Set the JSON "timeZone" to the local timezone shown in the current date context above when known; otherwise fall back to AOE (Anywhere on Earth = Etc/GMT+12 = UTC-12:00)
 4. Set isOnlineMeeting to true if Teams or video conference details are present
 5. Mark unknown values as null
 
