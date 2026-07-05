@@ -9,7 +9,7 @@ import { getLanguageText } from "../language.js";
 import { fillTemplate } from "../prompts.js";
 import { getSettings } from "../storage.js";
 import { DEFAULT_SETTINGS } from "../prompt-templates.js";
-import { showLoading, hideLoading, showNotification } from "./dom.js";
+import { showLoading, hideLoading, showNotification, escapeHtml } from "./dom.js";
 import { toggleSettingsView, getMissingApiKeyMessage } from "./settings-view.js";
 
 function getEventTitleLanguage() {
@@ -192,7 +192,7 @@ export async function handleCalendarEvent() {
           </button>
         </div>
         <div class="email-content-body">
-          <pre style="white-space: pre-wrap; word-break: break-word;">${emailContent}</pre>
+          <pre style="white-space: pre-wrap; word-break: break-word;">${escapeHtml(emailContent)}</pre>
         </div>
       `;
     }
@@ -220,10 +220,10 @@ export async function handleCalendarEvent() {
             <h3>Extracted Event Details</h3>
           </div>
           <div class="event-details-body">
-            <p><strong>Subject:</strong> ${eventDetails.subject || "Not found"}</p>
-            <p><strong>Start:</strong> ${eventDetails.start?.dateTime || "Not found"}</p>
-            <p><strong>End:</strong> ${eventDetails.end?.dateTime || "Not found"}</p>
-            <p><strong>Location:</strong> ${eventDetails.location?.displayName || "Not found"}</p>
+            <p><strong>Subject:</strong> ${escapeHtml(eventDetails.subject || "Not found")}</p>
+            <p><strong>Start:</strong> ${escapeHtml(eventDetails.start?.dateTime || "Not found")}</p>
+            <p><strong>End:</strong> ${escapeHtml(eventDetails.end?.dateTime || "Not found")}</p>
+            <p><strong>Location:</strong> ${escapeHtml(eventDetails.location?.displayName || "Not found")}</p>
           </div>
         `;
       }
@@ -243,7 +243,7 @@ export async function handleCalendarEvent() {
             <h3>Event Extraction Failed</h3>
           </div>
           <div class="event-details-body">
-            <p class="error-message">${cleanedMessage}</p>
+            <p class="error-message">${escapeHtml(cleanedMessage)}</p>
           </div>
         `;
       }

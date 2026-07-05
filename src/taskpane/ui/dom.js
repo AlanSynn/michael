@@ -1,4 +1,4 @@
-/* global document, console, navigator, marked, setTimeout */
+/* global document, console, navigator, marked, DOMPurify, setTimeout */
 
 // Low-level DOM helpers: notifications, loading/result sections, clipboard,
 // asset paths, and the result-type enum shared with the flows. No Office, no
@@ -18,6 +18,30 @@ export const TYPES = Object.freeze({
 /** Resolve a packaged asset URL under ./assets (rewritten by webpack/html-loader). */
 export function getAssetPath(fileName) {
   return `./assets/${fileName}`;
+}
+
+/**
+ * Escape a string for safe insertion into an HTML text context.
+ * Use this for any untrusted plain text (email body, LLM-parsed fields) that
+ * is concatenated into markup.
+ */
+export function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Render untrusted markdown to sanitized HTML. LLM/email output reaches the DOM
+ * only through this so script/event-handler payloads cannot execute (the taskpane
+ * has access to roamingSettings, i.e. the API key). DOMPurify keeps safe tags.
+ */
+export function renderMarkdown(content) {
+  const html = marked.parse(content || "");
+  return typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(html) : html;
 }
 
 /** Shorthand getElementById. Returns the element or null. */
@@ -149,7 +173,7 @@ export function updateResults(content) {
 
   const resultContent = $("result-content");
   if (resultContent) {
-    resultContent.innerHTML = marked.parse(content);
+    resultContent.innerHTML = renderMarkdown(content);
   }
 }
 
@@ -220,7 +244,7 @@ export function showResults(content, type) {
   const tldrMode = getTldrModeSetting();
 
   if (tldrContent) {
-    tldrContent.innerHTML = marked.parse(content);
+    tldrContent.innerHTML = renderMarkdown(content);
   }
 
   if (tldrMode) {
@@ -238,7 +262,7 @@ export function showResults(content, type) {
       fullEl.id = "result-content";
       $("full-content-container")?.appendChild(fullEl);
     }
-    fullEl.innerHTML = marked.parse(content);
+    fullEl.innerHTML = renderMarkdown(content);
     const fullContainer = $("full-content-container");
     if (fullContainer) {
       fullContainer.style.display = "block";
@@ -391,9 +415,9 @@ export function formatReplyOutput(replyText) {
   const formattedHtml = `
     <div class="reply-container">
       <div class="reply-subject">
-        <span class="reply-label">Subject:</span>${subject}
+        <span class="reply-label">Subject:</span>${escapeHtml(subject)}
       </div>
-      <div class="reply-body">${body}</div>
+      <div class="reply-body">${renderMarkdown(body)}</div>
     </div>
   `;
 
