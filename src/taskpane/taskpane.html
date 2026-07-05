@@ -381,6 +381,21 @@
                 <option value="reply">Generate Reply</option>
               </select>
             </div>
+            <div class="setting-row">
+              <span class="setting-label">Auto-Detect Calendar Events</span>
+              <div class="segmented" data-segmented="dropdown-autodetect-calendar">
+                <button type="button" class="segmented-btn" data-value="true">On</button>
+                <button type="button" class="segmented-btn" data-value="false">Off</button>
+              </div>
+              <select
+                id="dropdown-autodetect-calendar"
+                class="ms-Dropdown-select segmented-source"
+                hidden
+              >
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </div>
           </section>
         </div>
 

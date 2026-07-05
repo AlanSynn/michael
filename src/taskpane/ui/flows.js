@@ -11,7 +11,7 @@ import {
   requireTemplate,
   requireModel,
 } from "../generation.js";
-import { getEmailContent, getSubject } from "../mailbox.js";
+import { getEmailContent, getSubject, hasSelectedItem } from "../mailbox.js";
 import { getLanguageText } from "../language.js";
 import { fillTemplate } from "../prompts.js";
 import { getAutorunAction } from "../settings.js";
@@ -65,6 +65,17 @@ function isActiveFlow(signal) {
 
 /** Run the configured auto-action for the current item, if any. */
 export function runAutorun() {
+  // Stay quiet when nothing is selected — autorun fires on every ItemChanged,
+  // including scrolling the mailbox list with no item body to read.
+  if (!hasSelectedItem()) {
+    return;
+  }
+  // Stay quiet when no API key is configured. The manual button flows open
+  // Settings to guide the user, but doing that on every ItemChanged traps the
+  // user in an oscillating panel + re-fires the missing-key toast.
+  if (!getApiKey()) {
+    return;
+  }
   const action = getAutorunAction(getSettingsSafe());
   switch (action) {
     case "summarize":
@@ -106,13 +117,13 @@ export async function summarizeEmail() {
     });
 
     if (getTldrModeSetting()) {
-      const tldrContent = await generateTldrContent(
-        prompt,
+      const tldrContent = await generateTldrContent({
         apiKey,
-        getLanguageText(getLanguage()),
-        null,
-        signal
-      );
+        emailContent,
+        subject,
+        language: getLanguageText(getLanguage()),
+        signal,
+      });
       if (!isActiveFlow(signal)) return;
       hideLoading();
       showResults(tldrContent, TYPES.SUMMARIZE);
@@ -128,6 +139,10 @@ export async function summarizeEmail() {
     }
   } catch (error) {
     if (isCancelError(error)) return;
+    if (error && error.code === "NO_ITEM") {
+      showNotification("Select an email first.", "info");
+      return;
+    }
     showNotification(`Error: ${error.message}`, "error");
   } finally {
     if (isActiveFlow(signal)) hideLoading();
@@ -158,13 +173,13 @@ export async function translateEmail() {
     });
 
     if (getTldrModeSetting()) {
-      const tldrContent = await generateTldrContent(
-        prompt,
+      const tldrContent = await generateTldrContent({
         apiKey,
-        getLanguageText(language),
-        null,
-        signal
-      );
+        emailContent,
+        subject,
+        language: getLanguageText(language),
+        signal,
+      });
       if (!isActiveFlow(signal)) return;
       hideLoading();
       showResults(tldrContent, TYPES.TRANSLATE);
@@ -180,6 +195,10 @@ export async function translateEmail() {
     }
   } catch (error) {
     if (isCancelError(error)) return;
+    if (error && error.code === "NO_ITEM") {
+      showNotification("Select an email first.", "info");
+      return;
+    }
     showNotification(`Error: ${error.message}`, "error");
   } finally {
     if (isActiveFlow(signal)) hideLoading();
@@ -211,7 +230,13 @@ export async function translateAndSummarizeEmail() {
     });
 
     if (getTldrModeSetting()) {
-      const tldrContent = await generateTldrContent(prompt, apiKey, undefined, null, signal);
+      const tldrContent = await generateTldrContent({
+        apiKey,
+        emailContent,
+        subject,
+        language,
+        signal,
+      });
       if (!isActiveFlow(signal)) return;
       hideLoading();
       showResults(tldrContent, TYPES.TRANSLATE_SUMMARIZE);
@@ -227,6 +252,10 @@ export async function translateAndSummarizeEmail() {
     }
   } catch (error) {
     if (isCancelError(error)) return;
+    if (error && error.code === "NO_ITEM") {
+      showNotification("Select an email first.", "info");
+      return;
+    }
     showNotification(`Error: ${error.message}`, "error");
   } finally {
     if (isActiveFlow(signal)) hideLoading();
@@ -291,6 +320,10 @@ export async function generateReply() {
     }
   } catch (error) {
     if (isCancelError(error)) return;
+    if (error && error.code === "NO_ITEM") {
+      showNotification("Select an email first.", "info");
+      return;
+    }
     showNotification(`Error: ${error.message}`, "error");
   } finally {
     if (isActiveFlow(signal)) hideLoading();

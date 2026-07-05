@@ -7,7 +7,6 @@
 import { fetchAvailableModels, generateText } from "../shared/zai.js";
 import { DEFAULT_SETTINGS } from "./prompt-templates.js";
 import { getSettings } from "./storage.js";
-import { getEmailContent, getSubject } from "./mailbox.js";
 
 export { fetchAvailableModels };
 
@@ -57,16 +56,28 @@ export async function generateContent(
   }
 }
 
-export async function generateTldrContent(
-  prompt,
+/**
+ * Generate the TL;DR for an email. The caller already fetched the body + subject
+ * for the main flow, so accept them here rather than re-calling body.getAsync
+ * (which doubled the async traffic on every TL;DR flow and raced against a
+ * mid-flight email switch).
+ *
+ * @param {object} opts
+ * @param {string} opts.apiKey
+ * @param {string} opts.emailContent
+ * @param {string} opts.subject
+ * @param {string} [opts.language]
+ * @param {string|null} [opts.modelOverride]
+ * @param {AbortSignal|null} [opts.signal]
+ */
+export async function generateTldrContent({
   apiKey,
+  emailContent,
+  subject,
   language = "Korean",
   modelOverride = null,
-  signal = null
-) {
-  const subject = getSubject();
-  const emailContent = await getEmailContent();
-
+  signal = null,
+}) {
   const tldrPrompt = requireTemplate("tldrPrompt", "TL;DR")
     .replace("{subject}", subject)
     .replace("{content}", emailContent)

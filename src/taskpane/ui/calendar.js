@@ -1,4 +1,4 @@
-/* global document, console, navigator, Office */
+/* global document, console, navigator, Office, AbortController */
 
 // Calendar feature: detect whether an email describes an event, parse the
 // event details via Z.AI, and open a prefilled Outlook appointment form.
@@ -139,7 +139,7 @@ function createCalendarEvent(eventDetails) {
 }
 
 /** Ask Z.AI whether the email content describes a calendar event. */
-export async function checkIfCalendarEvent(emailContent) {
+export async function checkIfCalendarEvent(emailContent, signal = null) {
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -151,9 +151,12 @@ export async function checkIfCalendarEvent(emailContent) {
       content: emailContent,
     });
 
-    const result = await generateContent(prompt, apiKey, null, true);
+    const result = await generateContent(prompt, apiKey, null, true, signal);
     return result.toLowerCase().trim() === "true";
   } catch (error) {
+    if (error && error.name === "AbortError") {
+      throw error; // caller cancel — propagate, do not treat as "not an event"
+    }
     console.error("Error checking if calendar event:", error);
     return false;
   }
@@ -272,27 +275,90 @@ export async function handleCalendarEvent() {
   }
 }
 
-/** Enable/disable the calendar button based on whether the email is an event. */
+// --- calendar-event auto-detection -----------------------------------------
+// Detecting whether an email is a calendar event calls Z.AI (a paid
+// chat-completion that ships the full email body). Doing that on every email
+// open + bootstrap is a cost, privacy, and stale-UI firehose. So detection is
+// OPT-IN (autoDetectCalendarEvents setting, default off): when off the button
+// stays enabled and the user triggers extraction on demand; when on we probe,
+// memoize the result per itemId, and cancel the in-flight probe on ItemChanged.
+
+const calendarProbeCache = new Map(); // itemId -> boolean
+const CALENDAR_PROBE_CACHE_MAX = 50;
+let calendarProbeController = null;
+
+function isAutoDetectEnabled() {
+  const settings = getSettings();
+  return settings.autoDetectCalendarEvents === "true";
+}
+
+function getCurrentItemId() {
+  try {
+    return (Office.context.mailbox.item && Office.context.mailbox.item.itemId) || null;
+  } catch {
+    return null;
+  }
+}
+
+function applyCalendarButtonState(calendarBtn, isCalendarEvent) {
+  if (isCalendarEvent) {
+    calendarBtn.disabled = false;
+    calendarBtn.classList.remove("action-button--disabled");
+    calendarBtn.classList.add("action-button--primary");
+  } else {
+    calendarBtn.disabled = true;
+    calendarBtn.classList.add("action-button--disabled");
+    calendarBtn.classList.remove("action-button--primary");
+  }
+}
+
+/**
+ * Enable/disable the calendar button based on whether the email is an event.
+ * When auto-detect is off (default), the button is simply enabled. When on,
+ * the result is memoized per itemId and the probe is aborted on re-entry so
+ * rapid email switching cannot pile up requests or overwrite the button state.
+ */
 export async function updateCalendarButtonState() {
+  const calendarBtn = document.getElementById("calendar-event");
+  if (!calendarBtn) {
+    return;
+  }
+
+  if (!isAutoDetectEnabled()) {
+    applyCalendarButtonState(calendarBtn, true);
+    return;
+  }
+
+  const itemId = getCurrentItemId();
+  if (itemId && calendarProbeCache.has(itemId)) {
+    applyCalendarButtonState(calendarBtn, calendarProbeCache.get(itemId));
+    return;
+  }
+
+  // Abort any prior in-flight probe (e.g. the user switched emails mid-probe).
+  if (calendarProbeController) {
+    calendarProbeController.abort();
+  }
+  calendarProbeController = new AbortController();
+  const { signal } = calendarProbeController;
+
   try {
     const emailContent = await getEmailContent();
-    const isCalendarEvent = await checkIfCalendarEvent(emailContent);
-
-    const calendarBtn = document.getElementById("calendar-event");
-    if (!calendarBtn) {
-      return;
+    if (signal.aborted) return;
+    const isCalendarEvent = await checkIfCalendarEvent(emailContent, signal);
+    if (signal.aborted) return;
+    if (itemId) {
+      if (calendarProbeCache.size >= CALENDAR_PROBE_CACHE_MAX) {
+        calendarProbeCache.delete(calendarProbeCache.keys().next().value);
+      }
+      calendarProbeCache.set(itemId, isCalendarEvent);
     }
-
-    if (isCalendarEvent) {
-      calendarBtn.disabled = false;
-      calendarBtn.classList.remove("action-button--disabled");
-      calendarBtn.classList.add("action-button--primary");
-    } else {
-      calendarBtn.disabled = true;
-      calendarBtn.classList.add("action-button--disabled");
-      calendarBtn.classList.remove("action-button--primary");
-    }
+    applyCalendarButtonState(calendarBtn, isCalendarEvent);
   } catch (error) {
+    if (error && error.name === "AbortError") return;
+    // No selected item is benign (user is on the mailbox list), not a probe
+    // failure — stay quiet, mirroring the flows' NO_ITEM handling.
+    if (error && error.code === "NO_ITEM") return;
     console.error("Error updating calendar button state:", error);
   }
 }

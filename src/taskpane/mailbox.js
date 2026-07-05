@@ -12,12 +12,23 @@ function item() {
   return mailbox()?.item || null;
 }
 
+/** True when a mailbox item with a readable body is selected. */
+export function hasSelectedItem() {
+  const current = item();
+  return Boolean(current && current.body && typeof current.body.getAsync === "function");
+}
+
 /** @returns {Promise<string>} the current item body as plain text */
 export function getEmailContent() {
   return new Promise((resolve, reject) => {
     const current = item();
     if (!current?.body?.getAsync) {
-      reject(new Error("Failed to get email content"));
+      // Distinguish "no item selected / no body" (a benign state — the user is
+      // on the mailbox list) from a real fetch failure, so callers can stay
+      // quiet instead of toasting an error on every scroll-through.
+      const err = new Error("No email selected.");
+      err.code = "NO_ITEM";
+      reject(err);
       return;
     }
     current.body.getAsync("text", (result) => {

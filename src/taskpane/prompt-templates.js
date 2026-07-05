@@ -210,6 +210,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   showReply: "true",
   autorun: "false",
   autorunOption: "summarize",
+  autoDetectCalendarEvents: "false",
   devMode: "false",
   devServer: "",
 });

@@ -177,8 +177,17 @@ CI runs `validate → lint → test → build → test:e2e` before deploying. Se
 - **Content sanitization** — email/LLM markdown reaches the DOM only through
   `renderMarkdown` (`marked` + `DOMPurify`), which is bundled (no CDN/SRI) and
   fail-closed. `escapeHtml` is used for plain-text concatenation.
-- **Content-Security-Policy** — the taskpane ships a restrictive CSP
-  (`connect-src 'self' https://api.z.ai`; no `unsafe-inline` scripts).
+- **Content-Security-Policy** — the taskpane ships a restrictive CSP. Scripts are
+  limited to `'self'` plus the two office.js CDNs
+  (`appsforoffice.microsoft.com` for office.js; `ajax.aspnetcdn.com` for the
+  MicrosoftAjax.js it injects at runtime) — **no `'unsafe-inline'` scripts**.
+  `connect-src` allows only `api.z.ai` and office.js's ARIA telemetry endpoint
+  (`browser.pipe.aria.microsoft.com`). The single `'unsafe-inline'` is on
+  `style-src` (Fluent UI inline styles), not scripts. `base-uri 'none'`,
+  `object-src 'none'`. `commands.html` (the function-file host) ships a minimal
+  policy reusing the same `script-src`, `connect-src`, `base-uri`, and
+  `object-src` — it renders no UI, so it omits the `style-src`/`img-src`/`font-src`
+  directives the taskpane needs.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) → Security review checklist. Report
 vulnerabilities privately to the maintainer rather than opening a public issue.

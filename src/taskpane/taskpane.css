@@ -890,7 +890,7 @@ body {
     top: 20%;
     left: 50%;
     transform: translateX(-50%);
-    padding: 12px 24px;
+    padding: 12px 40px 12px 24px;
     border-radius: 4px;
     color: white;
     font-weight: 500;
@@ -899,7 +899,36 @@ body {
     animation: slideInFromTop 0.3s ease-out;
     max-width: 90%;
     text-align: center;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.notification-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.notification-close {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    border: none;
+    background: transparent;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    opacity: 0.8;
+}
+
+.notification-close:hover {
+    opacity: 1;
 }
 
 .notification.info {

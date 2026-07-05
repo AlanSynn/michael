@@ -1,4 +1,4 @@
-/* global document, console, navigator, setTimeout */
+/* global document, console, navigator, setTimeout, clearTimeout */
 
 // Low-level DOM helpers: notifications, loading/result sections, clipboard,
 // asset paths, and the result-type enum shared with the flows. No Office, no
@@ -88,17 +88,39 @@ export function showNotification(message, type = "info") {
   const notification = document.createElement("div");
   notification.id = "notification";
   notification.className = `notification ${type}`;
-  notification.textContent = message;
+  notification.setAttribute("role", type === "error" || type === "warning" ? "alert" : "status");
+
+  const text = document.createElement("span");
+  text.className = "notification-text";
+  text.textContent = message;
+  notification.appendChild(text);
+
+  // Manual dismiss so a long provider error stays readable until the user is
+  // done with it (auto-dismiss alone cut errors off at 3s with no recourse).
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "notification-close";
+  closeBtn.setAttribute("aria-label", "Dismiss notification");
+  closeBtn.textContent = "×";
+
+  let closeTimer = 0;
+  let outTimer = 0;
+  const dismiss = () => {
+    clearTimeout(closeTimer);
+    clearTimeout(outTimer);
+    notification.style.animation = "slideOutToTop 0.3s ease-out";
+    outTimer = setTimeout(() => notification.remove(), 300);
+  };
+  closeBtn.addEventListener("click", dismiss);
+  notification.appendChild(closeBtn);
 
   document.body.appendChild(notification);
   // Force reflow so the slide-in animation plays.
   notification.offsetHeight;
   notification.style.animation = "slideInFromTop 0.3s ease-out";
 
-  setTimeout(() => {
-    notification.style.animation = "slideOutToTop 0.3s ease-out";
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  const ttl = type === "error" || type === "warning" ? 6000 : 4000;
+  closeTimer = setTimeout(dismiss, ttl);
 }
 
 /** Show the loading section and hide landing/result sections. */

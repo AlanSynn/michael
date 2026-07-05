@@ -45,6 +45,13 @@ jobs:
       - name: Build add-in (production)
         run: npm run build
 
+      # Validate the TRANSFORMED prod manifest (dist/manifest.prod.xml), not just
+      # the source manifest. Catches webpack CopyWebpackPlugin transform
+      # regressions: a leftover localhost URL, a surviving localhost AppDomain,
+      # or a mangled <Resources> id — any of which Outlook rejects at install.
+      - name: Validate production manifest (post-transform)
+        run: npx office-addin-manifest validate dist/manifest.prod.xml
+
       # Playwright e2e runs against the built dist/. Cache the browser binary
       # keyed on the installed @playwright/test version so it survives runs.
       - name: Resolve Playwright version

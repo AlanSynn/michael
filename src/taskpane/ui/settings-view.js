@@ -341,6 +341,8 @@ export function loadDropdownSettings() {
     if (settings.devServer !== undefined) $("dropdown-dev-server").value = settings.devServer;
     if (settings.autorun) $("dropdown-autorun").value = settings.autorun;
     if (settings.autorunOption) $("dropdown-autorun-option").value = settings.autorunOption;
+    if (settings.autoDetectCalendarEvents)
+      $("dropdown-autodetect-calendar").value = settings.autoDetectCalendarEvents;
     if (settings.devMode) $("dropdown-dev-mode").value = settings.devMode;
 
     const devServerGroup = $("dev-server-group");
@@ -388,6 +390,7 @@ export async function saveDropdownSettings() {
     const replyModel = replyModelEl ? replyModelEl.value : undefined;
     const autorun = $("dropdown-autorun").value;
     const autorunOption = $("dropdown-autorun-option").value;
+    const autoDetectCalendarEvents = $("dropdown-autodetect-calendar").value;
     const devMode = $("dropdown-dev-mode").value;
     const devServer = $("dropdown-dev-server").value;
     const templates = collectPromptTemplatesFromForm();
@@ -403,6 +406,7 @@ export async function saveDropdownSettings() {
     settings.replyModel = replyModel || "";
     settings.autorun = autorun;
     settings.autorunOption = autorunOption;
+    settings.autoDetectCalendarEvents = autoDetectCalendarEvents;
     settings.devMode = devMode;
     settings.devServer = devServer;
     settings.templates = {

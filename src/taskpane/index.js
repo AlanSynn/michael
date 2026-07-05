@@ -137,6 +137,18 @@ function runBootstrap(source) {
   }
 }
 
+// Fallback init handshake. Some classic hosts fire Office.initialize but never
+// resolve Office.onReady (office-js #4735, a blocked MicrosoftAjax.js). The
+// bootstrapped guard above makes whichever fires first authoritative and the
+// other a no-op, so registering both is safe.
+if (typeof Office !== "undefined") {
+  // Deliberate resilience fallback for hosts where onReady never fires
+  // (office-js #4735); onReady alone is the documented preference, but
+  // registering initialize too is safe given the bootstrapped guard above.
+  // eslint-disable-next-line office-addins/no-office-initialize
+  Office.initialize = () => runBootstrap("initialize");
+}
+
 Office.onReady((info) => {
   const expectedHost = Office.HostType && Office.HostType.Outlook;
   console.info("[Michael] Office.onReady fired:", {
@@ -147,11 +159,20 @@ Office.onReady((info) => {
   if (info && expectedHost !== undefined && info.host === expectedHost) {
     runBootstrap("Office.onReady");
   } else {
+    const detectedHost = info && info.host ? info.host : "unknown";
     console.warn(
-      "[Michael] Office.onReady fired but host is not Outlook — staying on the " +
-        "sideload screen. If this appears inside Outlook, office.js may not have " +
-        "fully initialized (check the Network tab for MicrosoftAjax.js)."
+      "[Michael] Office.onReady fired but host is not Outlook (detected: " +
+        detectedHost +
+        ") — staying on the sideload screen."
     );
+    // Surface an actionable message instead of the generic sideload logo so a
+    // misconfigured launch (e.g. opened in a plain browser tab) is not a dead end.
+    const msg = document.getElementById("sideload-msg");
+    if (msg) {
+      msg.textContent =
+        "Michael can only run inside Outlook. Close this pane and reopen it from Outlook" +
+        (detectedHost !== "unknown" ? " (detected host: " + detectedHost + ")." : ".");
+    }
   }
 });
 

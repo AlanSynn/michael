@@ -79,8 +79,13 @@ export default async (env, options) => {
       // embed "" so a key can never leak into the published bundle.
       new webpack.DefinePlugin({
         __ZAI_API_KEY__: JSON.stringify(dev ? process.env.ZAI_API_KEY || "" : ""),
+        // Like the API key, the base URL override is dev-only: a production
+        // build always targets the canonical Z.AI endpoint so a stray env var
+        // on a CI/fork shell cannot redirect authenticated requests elsewhere.
         __ZAI_CODING_BASE_URL__: JSON.stringify(
-          process.env.ZAI_CODING_BASE_URL || "https://api.z.ai/api/coding/paas/v4"
+          dev
+            ? process.env.ZAI_CODING_BASE_URL || "https://api.z.ai/api/coding/paas/v4"
+            : "https://api.z.ai/api/coding/paas/v4"
         ),
       }),
       new HtmlWebpackPlugin({

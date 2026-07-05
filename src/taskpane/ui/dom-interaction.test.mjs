@@ -36,7 +36,10 @@ test("showNotification injects a #notification node with the message and type", 
   const n = document.getElementById("notification");
   assert.ok(n, "notification node created");
   assert.ok(n.className.includes("success"), `class: ${n.className}`);
-  assert.equal(n.textContent, "saved ok");
+  // Message lives in a dedicated span (a manual close button is also rendered).
+  const text = n.querySelector(".notification-text");
+  assert.ok(text, "notification-text span present");
+  assert.equal(text.textContent, "saved ok");
 });
 
 test("showNotification replaces any prior notification (no duplicates)", () => {
@@ -44,7 +47,7 @@ test("showNotification replaces any prior notification (no duplicates)", () => {
   showNotification("second", "error");
   const notes = document.querySelectorAll("#notification");
   assert.equal(notes.length, 1);
-  assert.equal(notes[0].textContent, "second");
+  assert.equal(notes[0].querySelector(".notification-text").textContent, "second");
 });
 
 test("showLoading shows #loading and hides landing/result sections", () => {
