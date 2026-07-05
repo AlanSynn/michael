@@ -92,6 +92,15 @@ export default async (env, options) => {
             },
           },
           {
+            // Self-hosted Inter woff2 (latin, weights 400/500/600/700). Copied
+            // verbatim to dist/fonts/ and referenced by @font-face in
+            // taskpane.css. Self-hosted => covered by CSP font-src 'self', no
+            // external font CDN. Inter is latin-only; Korean glyphs fall back
+            // to the system Korean font in the body font-family stack.
+            from: "node_modules/@fontsource/inter/files/inter-latin-{400,500,600,700}-normal.woff2",
+            to: "fonts/[name][ext]",
+          },
+          {
             from: "manifest*.xml",
             to: "[name]." + buildType + "[ext]",
             transform(content) {

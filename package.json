@@ -39,6 +39,7 @@
     "sideload:prod": "bash scripts/sideload-mac.sh prod"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "core-js": "^3.36.0",
     "dompurify": "^3.4.11",
     "marked": "^18.0.5",
