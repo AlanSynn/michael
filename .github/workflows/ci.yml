@@ -39,6 +39,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Build add-in (production)
         run: npm run build
 

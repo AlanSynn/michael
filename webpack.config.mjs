@@ -63,8 +63,12 @@ export default async (env, options) => {
       ],
     },
     plugins: [
+      // The Z.AI API key is entered at runtime (Settings -> General) and stored
+      // in Office.context.roamingSettings. The build-time ZAI_API_KEY env var is
+      // honored ONLY for dev builds (local convenience); production builds always
+      // embed "" so a key can never leak into the published bundle.
       new webpack.DefinePlugin({
-        __ZAI_API_KEY__: JSON.stringify(process.env.ZAI_API_KEY || ""),
+        __ZAI_API_KEY__: JSON.stringify(dev ? process.env.ZAI_API_KEY || "" : ""),
         __ZAI_CODING_BASE_URL__: JSON.stringify(
           process.env.ZAI_CODING_BASE_URL || "https://api.z.ai/api/coding/paas/v4"
         ),

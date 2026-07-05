@@ -7,6 +7,15 @@
 <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <!--
+      Content-Security-Policy: defense-in-depth, mirroring taskpane.html. The
+      function-file loads only office.js (CDN) + commands.js (self); outbound
+      calls are locked to the Z.AI API. No 'unsafe-inline' scripts.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com; connect-src 'self' https://api.z.ai; base-uri 'none'; object-src 'none';"
+    />
 
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
