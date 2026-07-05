@@ -39,7 +39,7 @@
     "sideload:prod": "bash scripts/sideload-mac.sh prod"
   },
   "dependencies": {
-    "core-js": "^3.36.0",
+    "core-js": "^3.49.0",
     "dompurify": "^3.4.11",
     "marked": "^15.0.7",
     "regenerator-runtime": "^0.14.1"
