@@ -1,9 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { JSDOM } from "jsdom";
 
-// dom.js imports only pure modules at module scope (storage -> prompt-templates);
-// DOM/CDN globals (document, marked, DOMPurify) are touched inside function
-// bodies, so escapeHtml/renderMarkdown are testable in plain Node.
+// dom.js now bundles marked + DOMPurify (real imports, not CDN globals), so the
+// test environment must provide a DOM before importing it. DOMPurify reads
+// window/document at import time. navigator is a getter on Node >=21, so define
+// it explicitly.
+const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>");
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+Object.defineProperty(globalThis, "navigator", {
+  value: dom.window.navigator,
+  configurable: true,
+});
+
 const { escapeHtml, renderMarkdown } = await import("./dom.js");
 
 test("escapeHtml returns empty for null/undefined", () => {
@@ -23,7 +33,10 @@ test("escapeHtml neutralizes the obvious XSS payloads", () => {
 });
 
 test("escapeHtml escapes every HTML-special character", () => {
-  assert.equal(escapeHtml(`a & b < c > d "e" 'f'`), "a &amp; b &lt; c &gt; d &quot;e&quot; &#39;f&#39;");
+  assert.equal(
+    escapeHtml(`a & b < c > d "e" 'f'`),
+    "a &amp; b &lt; c &gt; d &quot;e&quot; &#39;f&#39;"
+  );
 });
 
 test("escapeHtml coerces non-strings", () => {
@@ -31,43 +44,22 @@ test("escapeHtml coerces non-strings", () => {
   assert.equal(escapeHtml(["a", "b"]), "a,b");
 });
 
-test("renderMarkdown sanitizes marked output via DOMPurify", () => {
-  // Stub the CDN globals so renderMarkdown is exercised end-to-end.
-  globalThis.marked = { parse: (src) => `<p>${src}</p>` };
-  let sanitizedInput = null;
-  globalThis.DOMPurify = { sanitize: (html) => ((sanitizedInput = html), "CLEAN") };
-
-  assert.equal(renderMarkdown("**hi**"), "CLEAN");
-  assert.equal(sanitizedInput, "<p>**hi**</p>");
-  assert.equal(renderMarkdown(null), "CLEAN"); // null -> "" -> parsed
-
-  delete globalThis.marked;
-  delete globalThis.DOMPurify;
+test("renderMarkdown keeps safe markdown formatting", () => {
+  const out = renderMarkdown("**bold** and `code`");
+  assert.match(out, /<strong>bold<\/strong>/);
+  assert.match(out, /<code>code<\/code>/);
 });
 
-test("renderMarkdown FAILS CLOSED when DOMPurify is missing (no XSS)", () => {
-  // Regression guard: if the DOMPurify CDN fails to load, raw marked output
-  // (which preserves <script>/<img onerror>) must NEVER reach the DOM.
-  globalThis.marked = { parse: (src) => `<p>${src}</p><script>alert(1)</script>` };
-  delete globalThis.DOMPurify; // simulate CDN blocked / not loaded
-
-  const out = renderMarkdown('<img src=x onerror="alert(1)">');
-
-  // Must be escaped plain text — no live tag opener (< converted to &lt;).
-  // "onerror=" may appear as inert text inside escaped content; that is safe.
-  assert.ok(!/<img|<script/i.test(out), `live tag leaked: ${out}`);
-  assert.equal(out, escapeHtml('<img src=x onerror="alert(1)">'));
-
-  delete globalThis.marked;
+test("renderMarkdown strips script injection and event handlers", () => {
+  const out = renderMarkdown(
+    "hi <script>alert(1)</scr" + "ipt><img src=x onerror=alert(1)>"
+  );
+  assert.ok(!/<script/i.test(out), `<script> leaked: ${out}`);
+  assert.ok(!/onerror/i.test(out), `onerror leaked: ${out}`);
+  assert.match(out, /hi/); // benign text preserved
 });
 
-test("renderMarkdown FAILS CLOSED when marked is missing (no XSS)", () => {
-  delete globalThis.marked;
-  globalThis.DOMPurify = { sanitize: (html) => html };
-
-  const out = renderMarkdown("<script>alert(1)</script>");
-
-  assert.ok(!/<script>/.test(out), `raw markup leaked: ${out}`);
-
-  delete globalThis.DOMPurify;
+test("renderMarkdown null/empty yields empty string (no crash)", () => {
+  assert.equal(renderMarkdown(null), "");
+  assert.equal(renderMarkdown(""), "");
 });

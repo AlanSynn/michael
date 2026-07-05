@@ -1,5 +1,5 @@
-<!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. -->
-<!-- This file shows how to design a first-run page that provides a welcome screen to the user about the features of the add-in. -->
+<!-- Copyright (c) Alan Synn. All rights reserved. Licensed under the MIT License. -->
+<!-- Outlook taskpane UI for the Michael add-in. -->
 
 <!doctype html>
 <html>
@@ -8,6 +8,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Read it for me, Michael</title>
+
+    <!--
+      Content-Security-Policy: defense-in-depth. marked + DOMPurify are bundled
+      (not CDN), so only Office.js is loaded externally. connect-src locks
+      outbound requests to the Z.AI API. script-src has no 'unsafe-inline'.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com; style-src 'self' 'unsafe-inline' https://res-1.cdn.office.net; img-src 'self' data: https://res-1.cdn.office.net; font-src 'self' https://res-1.cdn.office.net; connect-src 'self' https://api.z.ai; base-uri 'none'; object-src 'none';"
+    />
 
     <!-- Office JavaScript API -->
     <script
@@ -477,18 +487,7 @@
       </div>
     </div>
 
-    <!-- marked.js (CDN, version-pinned + SRI) for markdown rendering -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"
-      integrity="sha384-H+hy9ULve6xfxRkWIh/YOtvDdpXgV2fmAGQkIDTxIgZwNoaoBal14Di2YTMR6MzR"
-      crossorigin="anonymous"
-    ></script>
-    <!-- DOMPurify (CDN, version-pinned + SRI) sanitizes LLM/markdown output before it reaches the DOM -->
-    <script
-      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js"
-      integrity="sha384-o44XUELLEnv/iSlA1NWxBweqbD4TSR0qgq2VzVsxtkHS989JJjGkSE9vkfo5MN4K"
-      crossorigin="anonymous"
-    ></script>
+    <!-- marked + DOMPurify are bundled into taskpane.js (no CDN) -->
     <!-- taskpane.js is injected automatically by HtmlWebpackPlugin -->
   </body>
 </html>

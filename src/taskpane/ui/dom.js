@@ -1,9 +1,11 @@
-/* global document, console, navigator, marked, DOMPurify, setTimeout */
+/* global document, console, navigator, setTimeout */
 
 // Low-level DOM helpers: notifications, loading/result sections, clipboard,
 // asset paths, and the result-type enum shared with the flows. No Office, no
 // generation. Reads settings (storage facade) only to render the result view.
 
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 import { getSettings } from "../storage.js";
 
 /** Result kinds passed to showResults to toggle per-type buttons. */
@@ -39,18 +41,10 @@ export function escapeHtml(value) {
  * only through this so script/event-handler payloads cannot execute (the taskpane
  * has access to roamingSettings, i.e. the API key). DOMPurify keeps safe tags.
  *
- * FAIL CLOSED: if either marked or DOMPurify failed to load (CDN blocked by a
- * proxy/ad-blocker, transient outage), never insert raw markup — return escaped
- * plain text and warn the user. Returning the raw parsed HTML here would be an
- * XSS sink that exposes the saved API key.
+ * marked + DOMPurify are bundled (not CDN), so both are always available — no
+ * fail-open path exists. This is the single trust boundary for rich rendering.
  */
 export function renderMarkdown(content) {
-  if (typeof marked === "undefined" || typeof DOMPurify === "undefined") {
-    // Fail closed: never insert raw markup. The degraded plain-text rendering
-    // is itself the visible signal; console.warn is for developers.
-    console.warn("[Michael] Markdown libraries failed to load; rendering plain text.");
-    return escapeHtml(content || "");
-  }
   return DOMPurify.sanitize(marked.parse(content || ""));
 }
 
