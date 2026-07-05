@@ -1,4 +1,4 @@
-/* global document, console, navigator, setTimeout, URL, Blob, Office */
+/* global document, console, navigator, setTimeout, URL, Blob, Event, Office */
 
 // Settings panel controller: tab switching, form load/save, model-catalog UI
 // glue, theme application (R8: single source of truth via resolveTheme), and
@@ -118,6 +118,71 @@ export function initializeSettingsTabs() {
   if (firstTabButton) {
     activate(firstTabButton);
   }
+}
+
+// --- Segmented toggles + accordions -----------------------------------------
+
+/**
+ * Sync every segmented toggle's active button from its bound <select>. The
+ * <select> stays the single source of truth for load/save; the toggle is a
+ * visual layer on top.
+ */
+export function syncSegmentedToggles() {
+  document.querySelectorAll("[data-segmented]").forEach((group) => {
+    const selectId = group.getAttribute("data-segmented");
+    const select = selectId ? $(selectId) : null;
+    if (!select) {
+      return;
+    }
+    const value = select.value;
+    group.querySelectorAll(".segmented-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-value") === value);
+    });
+  });
+  updateAutorunOptionState();
+}
+
+/** Dim + disable the auto-run action row whenever auto-run is off. */
+function updateAutorunOptionState() {
+  const autorun = $("dropdown-autorun");
+  const row = $("autorun-option-row");
+  if (autorun && row) {
+    row.classList.toggle("is-disabled", autorun.value !== "true");
+  }
+}
+
+/**
+ * Wire the segmented toggles (write back to their <select> + emit `change` so
+ * existing listeners — e.g. dev-mode revealing the dev-server group — still
+ * fire) and the template accordions. Call once during bootstrap.
+ */
+export function initSettingsInteractions() {
+  document.querySelectorAll(".segmented").forEach((group) => {
+    group.addEventListener("click", (event) => {
+      const btn = event.target.closest(".segmented-btn");
+      if (!btn || !group.contains(btn)) {
+        return;
+      }
+      const selectId = group.getAttribute("data-segmented");
+      const select = selectId ? $(selectId) : null;
+      if (!select) {
+        return;
+      }
+      select.value = btn.getAttribute("data-value");
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      syncSegmentedToggles();
+    });
+  });
+
+  document.querySelectorAll("[data-accordion]").forEach((accordion) => {
+    accordion.addEventListener("click", (event) => {
+      const header = event.target.closest("[data-accordion-toggle]");
+      if (!header || !accordion.contains(header)) {
+        return;
+      }
+      header.closest("[data-accordion-item]").classList.toggle("open");
+    });
+  });
 }
 
 // --- Prompt template form glue ----------------------------------------------
@@ -283,6 +348,7 @@ export function loadDropdownSettings() {
     setCatalog(getCachedCatalog());
     syncModelDropdowns();
     updateAuthenticationStatus();
+    syncSegmentedToggles();
   } catch (error) {
     console.error("Error loading dropdown settings:", error);
     applyPromptTemplatesToForm(createBlankPromptTemplates());
@@ -531,6 +597,7 @@ export async function resetAllSettings() {
     applyFontSize(blankSettings.fontSize);
     updateReplyButtonVisibility(blankSettings.showReply === "true");
     updateDevBadges(false);
+    syncSegmentedToggles();
 
     showNotification("All saved Outlook settings cleared", "success");
     initializeSettingsTabs();

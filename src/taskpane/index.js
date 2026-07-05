@@ -14,6 +14,7 @@ import {
   applyCurrentTheme,
   onSettingsChanged,
   initializeSettingsTabs,
+  initSettingsInteractions,
   toggleSettingsView,
   saveDropdownSettings,
   resetAllSettings,
@@ -91,6 +92,7 @@ function bootstrapOutlook() {
   refreshModelCatalog({ silent: true });
   applyCurrentTheme();
   initializeSettingsTabs();
+  initSettingsInteractions();
 
   // Re-apply the theme when Office settings change (only when following Office).
   registerSettingsChanged(onSettingsChanged);

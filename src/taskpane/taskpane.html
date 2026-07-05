@@ -213,7 +213,7 @@
       </footer>
     </main>
 
-    <!-- New Settings View -->
+    <!-- Settings View -->
     <div id="settings-view" class="settings-view" style="display: none">
       <div class="settings-header">
         <h2>Settings</h2>
@@ -227,25 +227,41 @@
         <button class="settings-tab-button" data-tab="tab-developer">Developer</button>
       </div>
       <div class="settings-content">
-        <!-- General Tab Content -->
+        <!-- General Tab -->
         <div id="tab-general" class="settings-tab-content active">
-          <div class="settings-group">
-            <label>Z.AI Authentication:</label>
-            <input
-              type="password"
-              id="dropdown-api-key"
-              class="ms-TextField-field"
-              placeholder="Enter API key"
-            />
-            <p id="dropdown-auth-status">Authentication source: ZAI_API_KEY not checked yet.</p>
-            <span class="settings-help-text"
-              >Saved in Outlook add-in settings. Coding Plan requests target
-              <code>https://api.z.ai/api/coding/paas/v4</code>.</span
-            >
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-model">Primary Model:</label>
-            <select id="dropdown-model" class="ms-Dropdown-select"></select>
+          <!-- Account -->
+          <section class="section-card">
+            <h3 class="section-title">Account</h3>
+            <div class="setting-row setting-row--stacked">
+              <label for="dropdown-api-key" class="setting-label">Z.AI API Key</label>
+              <input
+                type="password"
+                id="dropdown-api-key"
+                class="ms-TextField-field"
+                placeholder="Enter API key"
+              />
+              <p id="dropdown-auth-status" class="setting-hint">
+                Authentication source: ZAI_API_KEY not checked yet.
+              </p>
+              <span class="settings-help-text">
+                Saved in Outlook add-in settings. Coding Plan requests target
+                <code>https://api.z.ai/api/coding/paas/v4</code>.
+              </span>
+            </div>
+          </section>
+
+          <!-- Models -->
+          <section class="section-card">
+            <h3 class="section-title">Models</h3>
+            <div class="setting-row">
+              <label for="dropdown-model" class="setting-label">Primary Model</label>
+              <select id="dropdown-model" class="ms-Dropdown-select"></select>
+            </div>
+            <div class="setting-row">
+              <label for="dropdown-reply-model" class="setting-label">Reply Model</label>
+              <select id="dropdown-reply-model" class="ms-Dropdown-select"></select>
+              <span class="settings-help-text">Shares the primary model catalog.</span>
+            </div>
             <div class="model-catalog-toolbar">
               <span
                 id="dropdown-model-status"
@@ -254,194 +270,210 @@
                 aria-live="polite"
                 >Model catalog has not been refreshed yet.</span
               >
-              <button
-                id="dropdown-refresh-models"
-                type="button"
-                class="ms-Button settings-inline-button"
-              >
-                Refresh models
+              <button id="dropdown-refresh-models" type="button" class="ms-Button settings-inline-button">
+                Refresh
               </button>
             </div>
-            <span id="model-catalog-meta" class="settings-help-text"
-              >Auto-refreshes on load and whenever the settings view opens.</span
-            >
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-language">Default Language:</label>
-            <select id="dropdown-language" class="ms-Dropdown-select">
-              <option value="ko">Korean</option>
-              <option value="en">English</option>
-              <option value="ja">Japanese</option>
-              <option value="zh_cn">Chinese</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-event-title-language">Event Title Language:</label>
-            <select id="dropdown-event-title-language" class="ms-Dropdown-select">
-              <option value="en">English</option>
-              <option value="ko">Korean</option>
-              <option value="ja">Japanese</option>
-              <option value="zh_cn">Chinese</option>
-              <option value="es">Spanish</option>
-              <option value="fr">French</option>
-              <option value="de">German</option>
-              <option value="it">Italian</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-theme">Theme:</label>
-            <select id="dropdown-theme" class="ms-Dropdown-select">
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-font-size">Font Size:</label>
-            <select id="dropdown-font-size" class="ms-Dropdown-select">
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-tldr-mode">TL;DR Mode:</label>
-            <select id="dropdown-tldr-mode" class="ms-Dropdown-select">
-              <option value="true">Enabled</option>
-              <option value="false">Disabled</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-show-reply">Show Reply Button:</label>
-            <select id="dropdown-show-reply" class="ms-Dropdown-select">
-              <option value="true">Show</option>
-              <option value="false">Hide</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-reply-model">Reply Model:</label>
-            <select id="dropdown-reply-model" class="ms-Dropdown-select"></select>
-            <span class="settings-help-text"
-              >Shares the same Z.AI catalog as the primary model selector.</span
-            >
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-autorun">Auto-Run:</label>
-            <select id="dropdown-autorun" class="ms-Dropdown-select">
-              <option value="false">Disabled</option>
-              <option value="true">Enabled</option>
-            </select>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-autorun-option">Auto-Run Option:</label>
-            <select id="dropdown-autorun-option" class="ms-Dropdown-select">
-              <option value="summarize">Summarize</option>
-              <option value="translate">Translate</option>
-              <option value="translateAndSummarize">Translate & Summarize</option>
-              <option value="reply">Generate Reply</option>
-            </select>
-          </div>
+          </section>
+
+          <!-- Language & Output -->
+          <section class="section-card">
+            <h3 class="section-title">Language &amp; Output</h3>
+            <div class="setting-row">
+              <label for="dropdown-language" class="setting-label">Default Language</label>
+              <select id="dropdown-language" class="ms-Dropdown-select">
+                <option value="ko">Korean</option>
+                <option value="en">English</option>
+                <option value="ja">Japanese</option>
+                <option value="zh_cn">Chinese</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label for="dropdown-event-title-language" class="setting-label">Event Title Language</label>
+              <select id="dropdown-event-title-language" class="ms-Dropdown-select">
+                <option value="en">English</option>
+                <option value="ko">Korean</option>
+                <option value="ja">Japanese</option>
+                <option value="zh_cn">Chinese</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="it">Italian</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">TL;DR Mode</span>
+              <div class="segmented" data-segmented="dropdown-tldr-mode">
+                <button type="button" class="segmented-btn" data-value="true">On</button>
+                <button type="button" class="segmented-btn" data-value="false">Off</button>
+              </div>
+              <select id="dropdown-tldr-mode" class="ms-Dropdown-select segmented-source" hidden>
+                <option value="true">Enabled</option>
+                <option value="false">Disabled</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Show Reply Button</span>
+              <div class="segmented" data-segmented="dropdown-show-reply">
+                <button type="button" class="segmented-btn" data-value="true">Show</button>
+                <button type="button" class="segmented-btn" data-value="false">Hide</button>
+              </div>
+              <select id="dropdown-show-reply" class="ms-Dropdown-select segmented-source" hidden>
+                <option value="true">Show</option>
+                <option value="false">Hide</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label for="dropdown-font-size" class="setting-label">Result Font Size</label>
+              <select id="dropdown-font-size" class="ms-Dropdown-select">
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </section>
+
+          <!-- Appearance & Behavior -->
+          <section class="section-card">
+            <h3 class="section-title">Appearance &amp; Behavior</h3>
+            <div class="setting-row">
+              <label for="dropdown-theme" class="setting-label">Theme</label>
+              <select id="dropdown-theme" class="ms-Dropdown-select">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">Auto-Run on Email Open</span>
+              <div class="segmented" data-segmented="dropdown-autorun">
+                <button type="button" class="segmented-btn" data-value="true">On</button>
+                <button type="button" class="segmented-btn" data-value="false">Off</button>
+              </div>
+              <select id="dropdown-autorun" class="ms-Dropdown-select segmented-source" hidden>
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </div>
+            <div class="setting-row" id="autorun-option-row">
+              <label for="dropdown-autorun-option" class="setting-label">Auto-Run Action</label>
+              <select id="dropdown-autorun-option" class="ms-Dropdown-select">
+                <option value="summarize">Summarize</option>
+                <option value="translate">Translate</option>
+                <option value="translateAndSummarize">Translate &amp; Summarize</option>
+                <option value="reply">Generate Reply</option>
+              </select>
+            </div>
+          </section>
         </div>
-        <!-- Templates Tab Content -->
+
+        <!-- Templates Tab -->
         <div id="tab-templates" class="settings-tab-content">
-          <div class="settings-group">
-            <label for="dropdown-summarize-template">Summarize Template:</label>
-            <textarea
-              id="dropdown-summarize-template"
-              class="ms-TextField-field"
-              rows="5"
-            ></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-translate-template">Translate Template:</label>
-            <textarea
-              id="dropdown-translate-template"
-              class="ms-TextField-field"
-              rows="5"
-            ></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-translate-summarize-template"
-              >Translate & Summarize Template:</label
-            >
-            <textarea
-              id="dropdown-translate-summarize-template"
-              class="ms-TextField-field"
-              rows="5"
-            ></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-reply-template">Reply Template:</label>
-            <textarea id="dropdown-reply-template" class="ms-TextField-field" rows="5"></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-command-translate-template">Quick Translate Command Template:</label>
-            <textarea
-              id="dropdown-command-translate-template"
-              class="ms-TextField-field"
-              rows="5"
-            ></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-tldr-template">TL;DR Template:</label>
-            <textarea id="dropdown-tldr-template" class="ms-TextField-field" rows="5"></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-calendar-parse-template">Calendar Parse Template:</label>
-            <textarea
-              id="dropdown-calendar-parse-template"
-              class="ms-TextField-field"
-              rows="7"
-            ></textarea>
-          </div>
-          <div class="settings-group">
-            <label for="dropdown-calendar-check-template">Calendar Check Template:</label>
-            <textarea
-              id="dropdown-calendar-check-template"
-              class="ms-TextField-field"
-              rows="5"
-            ></textarea>
-          </div>
-          <div class="template-actions">
-            <button id="dropdown-reset-templates" class="ms-Button">Load Saved Defaults</button>
-            <button id="dropdown-load-builtins" class="ms-Button">Load Built-in Defaults</button>
-            <button id="dropdown-save-template-defaults" class="ms-Button">
-              Save as Defaults
-            </button>
-            <button id="dropdown-clear-templates" class="ms-Button">Clear Templates</button>
+          <div class="template-actions template-actions--top">
+            <button id="dropdown-load-builtins" class="ms-Button">Load Built-ins</button>
+            <button id="dropdown-reset-templates" class="ms-Button">Load Saved</button>
+            <button id="dropdown-save-template-defaults" class="ms-Button">Save as Defaults</button>
+            <button id="dropdown-clear-templates" class="ms-Button">Clear</button>
             <button id="dropdown-copy-templates" class="ms-Button">Copy All</button>
-            <button id="dropdown-export-markdown" class="ms-Button">Export All</button>
+            <button id="dropdown-export-markdown" class="ms-Button">Export</button>
+          </div>
+
+          <div class="accordion" data-accordion>
+            <div class="accordion-item" data-accordion-item>
+              <button type="button" class="accordion-header" data-accordion-toggle>
+                <span>Email</span>
+                <i class="ms-Icon ms-Icon--ChevronDown chevron" aria-hidden="true"></i>
+              </button>
+              <div class="accordion-panel">
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-summarize-template" class="setting-label">Summarize</label>
+                  <textarea id="dropdown-summarize-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-translate-template" class="setting-label">Translate</label>
+                  <textarea id="dropdown-translate-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-translate-summarize-template" class="setting-label">Translate &amp; Summarize</label>
+                  <textarea id="dropdown-translate-summarize-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-reply-template" class="setting-label">Reply</label>
+                  <textarea id="dropdown-reply-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item" data-accordion-item>
+              <button type="button" class="accordion-header" data-accordion-toggle>
+                <span>Command &amp; System</span>
+                <i class="ms-Icon ms-Icon--ChevronDown chevron" aria-hidden="true"></i>
+              </button>
+              <div class="accordion-panel">
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-command-translate-template" class="setting-label">Quick Translate (ribbon)</label>
+                  <textarea id="dropdown-command-translate-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-tldr-template" class="setting-label">TL;DR</label>
+                  <textarea id="dropdown-tldr-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="accordion-item" data-accordion-item>
+              <button type="button" class="accordion-header" data-accordion-toggle>
+                <span>Calendar</span>
+                <i class="ms-Icon ms-Icon--ChevronDown chevron" aria-hidden="true"></i>
+              </button>
+              <div class="accordion-panel">
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-calendar-parse-template" class="setting-label">Event Parse</label>
+                  <textarea id="dropdown-calendar-parse-template" class="ms-TextField-field" rows="7"></textarea>
+                </div>
+                <div class="setting-row setting-row--stacked">
+                  <label for="dropdown-calendar-check-template" class="setting-label">Event Detect</label>
+                  <textarea id="dropdown-calendar-check-template" class="ms-TextField-field" rows="5"></textarea>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <!-- Developer Tab Content -->
+
+        <!-- Developer Tab -->
         <div id="tab-developer" class="settings-tab-content">
-          <div class="settings-group">
-            <label for="dropdown-dev-mode">Dev Mode:</label>
-            <select id="dropdown-dev-mode" class="ms-Dropdown-select">
-              <option value="false">Disabled</option>
-              <option value="true">Enabled</option>
-            </select>
-          </div>
-          <div class="settings-group" id="dev-server-group" style="display: none">
-            <label for="dropdown-dev-server">Dev Server URL:</label>
-            <input
-              type="text"
-              id="dropdown-dev-server"
-              class="ms-TextField-field"
-              placeholder="Enter dev server URL"
-            />
-          </div>
+          <section class="section-card">
+            <h3 class="section-title">Developer</h3>
+            <div class="setting-row">
+              <span class="setting-label">Dev Mode</span>
+              <div class="segmented" data-segmented="dropdown-dev-mode">
+                <button type="button" class="segmented-btn" data-value="false">Off</button>
+                <button type="button" class="segmented-btn" data-value="true">On</button>
+              </div>
+              <select id="dropdown-dev-mode" class="ms-Dropdown-select segmented-source" hidden>
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+            </div>
+            <div class="setting-row setting-row--stacked" id="dev-server-group" style="display: none">
+              <label for="dropdown-dev-server" class="setting-label">Dev Server URL</label>
+              <input
+                type="text"
+                id="dropdown-dev-server"
+                class="ms-TextField-field"
+                placeholder="Enter dev server URL"
+              />
+            </div>
+          </section>
         </div>
       </div>
       <div class="settings-footer-actions">
-        <button id="dropdown-reset-all" class="ms-Button">Reset All Settings</button>
-        <button id="dropdown-save-settings" class="ms-Button ms-Button--primary">
-          Save Settings
-        </button>
+        <button id="dropdown-reset-all" class="ms-Button">Reset All</button>
+        <button id="dropdown-save-settings" class="ms-Button ms-Button--primary">Save Settings</button>
       </div>
     </div>
 
