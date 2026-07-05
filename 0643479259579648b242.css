@@ -549,6 +549,212 @@ body {
     border-bottom-color: var(--accent-color);
 }
 
+/* ===== Settings redesign: cards, segmented toggles, accordions ===== */
+/* Reuses the existing theme tokens (--background-*, --text-*, --accent-color,
+   --border-color, --button-text) so light/dark stay harmonized. */
+
+.section-card {
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+}
+
+.section-title {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.setting-row:last-child {
+    margin-bottom: 0;
+}
+
+.setting-row--stacked {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.setting-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.setting-row > .ms-Dropdown-select {
+    flex: 1;
+    max-width: 220px;
+}
+
+.setting-row--stacked > .ms-TextField-field {
+    width: 100%;
+    max-width: none;
+}
+
+.setting-hint {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.settings-help-text {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.settings-help-text code {
+    background-color: var(--code-background);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.model-catalog-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.model-catalog-status {
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-inline-button {
+    font-size: 12px;
+    padding: 4px 12px;
+    flex-shrink: 0;
+}
+
+/* Segmented toggle (backed by a hidden <select> that stays the value source) */
+.segmented-source {
+    display: none !important;
+}
+
+.segmented {
+    display: inline-flex;
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.segmented-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 5px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.segmented-btn:hover {
+    color: var(--text-primary);
+}
+
+.segmented-btn.active {
+    background-color: var(--accent-color);
+    color: var(--button-text);
+}
+
+.segmented-btn.active:hover {
+    color: var(--button-text);
+}
+
+/* Accordion groups for prompt templates */
+.accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.accordion-item {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--background-primary);
+}
+
+.accordion-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border: none;
+    background-color: var(--background-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.accordion-header:hover {
+    background-color: var(--hover-background);
+}
+
+.accordion-header .chevron {
+    transition: transform 0.2s ease;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.accordion-item.open .chevron {
+    transform: rotate(180deg);
+}
+
+.accordion-panel {
+    display: none;
+    padding: 12px;
+}
+
+.accordion-item.open .accordion-panel {
+    display: block;
+}
+
+/* Template toolbar at the top of the Templates tab */
+.template-actions--top {
+    margin: 0 0 14px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+.template-actions--top .ms-Button {
+    font-size: 12px;
+    padding: 4px 10px;
+}
+
+/* Disabled state for the auto-run action row when auto-run is off */
+#autorun-option-row.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
 [data-theme="dark"] .settings-group label {
     color: var(--text-primary);
 }
