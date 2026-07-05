@@ -1,3 +1,5 @@
+/* global Office */
+
 // Thin async wrappers over Office.context.mailbox.item, plus flat event
 // registration helpers. This is the one place the rest of the app reaches
 // into the mailbox, so it is easy to stub for tests/mocks.

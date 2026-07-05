@@ -1,3 +1,5 @@
+/* global console, document */
+
 // Z.AI orchestration over the shared zai.js client + storage + mailbox.
 // Pure generation logic; UI status updates stay in the settings-view/UI layer.
 
@@ -46,7 +48,12 @@ export async function generateContent(prompt, apiKey, modelOverride = null, isTl
   }
 }
 
-export async function generateTldrContent(prompt, apiKey, language = "Korean", modelOverride = null) {
+export async function generateTldrContent(
+  prompt,
+  apiKey,
+  language = "Korean",
+  modelOverride = null
+) {
   const subject = getSubject();
   const emailContent = await getEmailContent();
 

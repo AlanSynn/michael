@@ -23,12 +23,7 @@ export const SETTINGS_FIELD_KEYS = Object.freeze([
   "apiKey",
 ]);
 
-const AUTORUN_ACTIONS = Object.freeze([
-  "summarize",
-  "translate",
-  "translateAndSummarize",
-  "reply",
-]);
+const AUTORUN_ACTIONS = Object.freeze(["summarize", "translate", "translateAndSummarize", "reply"]);
 
 /**
  * Merge a partial settings object over DEFAULT_SETTINGS.

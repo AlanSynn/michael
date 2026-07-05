@@ -1,11 +1,10 @@
+/* global console, localStorage, sessionStorage, Office */
+
 // The single Office roamingSettings storage boundary.
 // All Office.context.roamingSettings access lives here; everything else calls
 // these helpers so the Office coupling stays in one testable place.
 
-import {
-  createBlankPromptTemplates,
-  createBlankSettings,
-} from "./prompt-templates.js";
+import { createBlankPromptTemplates, createBlankSettings } from "./prompt-templates.js";
 
 export const SETTINGS_KEY = "michael_settings";
 export const TEMPLATE_DEFAULTS_KEY = "michael_template_defaults";
