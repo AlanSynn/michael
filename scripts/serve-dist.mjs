@@ -26,7 +26,9 @@ const server = http.createServer(async (req, res) => {
       urlPath = "/taskpane.html";
     }
     const filePath = path.join(ROOT, urlPath);
-    if (!filePath.startsWith(ROOT)) {
+    // Reject path traversal: the resolved path must be ROOT itself or live
+    // directly under it (avoids the startsWith-prefix-confusion pitfall).
+    if (filePath !== ROOT && !filePath.startsWith(ROOT + path.sep)) {
       res.statusCode = 403;
       res.end("forbidden");
       return;

@@ -129,7 +129,10 @@ test.describe("integration (mocked Office host)", () => {
       route.fulfill({ contentType: "text/javascript", body: OFFICE_STUB })
     );
     await page.goto("/taskpane.html", { waitUntil: "load" });
-    await page.waitForTimeout(300);
+    // bootstrapOutlook() flips #app-body to visible (and hides #sideload-msg)
+    // once Office.onReady fires — wait on that deterministic signal instead of
+    // a fixed timeout so the test does not flake on a loaded CI runner.
+    await expect(page.locator("#app-body")).toBeVisible({ timeout: 5_000 });
 
     // Settings toggle button should now have a click handler wired by bootstrap.
     await page.locator("#settings-toggle").click({ timeout: 5_000 });

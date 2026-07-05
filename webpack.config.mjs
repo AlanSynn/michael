@@ -5,7 +5,6 @@
 import devCerts from "office-addin-dev-certs";
 import CopyWebpackPlugin from "copy-webpack-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import path from "node:path";
 import webpack from "webpack";
 
 const urlDev = "https://localhost:3000/";

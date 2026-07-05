@@ -31,9 +31,9 @@ async function action(event) {
   const template = getSavedCommandTranslateTemplate(settings);
   const targetLanguage = getLanguageText(settings.defaultLanguage);
 
-  showProcessingNotification(`Translating email body to ${targetLanguage}...`);
-
   try {
+    showProcessingNotification(`Translating email body to ${targetLanguage}...`);
+
     const emailContent = await getEmailContent();
     const subject = Office.context.mailbox.item.subject;
     const prompt = fillTemplate(template, {
