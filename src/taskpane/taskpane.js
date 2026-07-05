@@ -5,7 +5,7 @@
 
 /* global Blob, console, document, localStorage, marked, navigator, Office, sessionStorage, setTimeout, URL, window */
 
-import { fetchAvailableModels, generateText, getDefaultZaiModels } from "../shared/zai";
+import { fetchAvailableModels, getDefaultZaiModels } from "../shared/zai";
 import {
   createBlankPromptTemplates,
   createBlankSettings,
@@ -17,6 +17,31 @@ import {
 import { isDarkTheme } from "./theme";
 import { getLanguageText } from "./language";
 import { getFontSizeValue } from "./fonts";
+import {
+  getSettings,
+  saveSettingsToStore,
+  roamingStorage,
+  saveRoamingStoreAsync,
+  migrateSettingsKeys,
+  getSavedTemplateDefaults,
+  saveTemplateDefaults,
+  readCachedModelCatalog,
+  writeCachedModelCatalog,
+  SETTINGS_KEY,
+  TEMPLATE_DEFAULTS_KEY,
+  MODEL_CATALOG_CACHE_KEY,
+} from "./storage";
+import { getEmailContent } from "./mailbox";
+import {
+  generateContent,
+  generateTldrContent,
+  getApiKey,
+  getLanguage,
+  getTemplateValue,
+  requireTemplate,
+  requireModel,
+} from "./generation";
+import { getCatalog, setCatalog, getCachedModelCatalog as resolveCachedCatalog } from "./model-catalog";
 
 const TYPES = {
   SUMMARIZE: 0,
@@ -25,11 +50,6 @@ const TYPES = {
   REPLY: 3,
   CALENDAR: 4,
 };
-
-const MODEL_CATALOG_CACHE_KEY = "michael_zai_model_catalog";
-const TEMPLATE_DEFAULTS_KEY = "michael_template_defaults";
-const SETTINGS_KEY = "michael_settings";
-let availableModelCatalog = getDefaultZaiModels();
 
 const PROMPT_FIELD_MAP = Object.freeze({
   summarize: "dropdown-summarize-template",
@@ -44,102 +64,6 @@ const PROMPT_FIELD_MAP = Object.freeze({
 
 function getAssetPath(fileName) {
   return `./assets/${fileName}`;
-}
-
-function getRoamingStore() {
-  return Office?.context?.roamingSettings || null;
-}
-
-function saveRoamingStoreAsync() {
-  const store = getRoamingStore();
-  if (!store) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve, reject) => {
-    store.saveAsync((result) => {
-      if (result.status === Office.AsyncResultStatus.Failed) {
-        reject(new Error(result.error?.message || "Failed to save Outlook add-in settings."));
-        return;
-      }
-
-      resolve();
-    });
-  });
-}
-
-const roamingStorage = Object.freeze({
-  getItem(key) {
-    try {
-      const store = getRoamingStore();
-      const value = store ? store.get(key) : null;
-      return typeof value === "string" ? value : null;
-    } catch (error) {
-      console.error(`Error reading Outlook add-in setting ${key}:`, error);
-      return null;
-    }
-  },
-  setItem(key, value) {
-    try {
-      const store = getRoamingStore();
-      if (!store) {
-        return;
-      }
-
-      store.set(key, value);
-    } catch (error) {
-      console.error(`Error writing Outlook add-in setting ${key}:`, error);
-    }
-  },
-  removeItem(key) {
-    try {
-      const store = getRoamingStore();
-      if (!store) {
-        return;
-      }
-
-      store.remove(key);
-    } catch (error) {
-      console.error(`Error removing Outlook add-in setting ${key}:`, error);
-    }
-  },
-});
-
-/**
- * Migrate legacy browser storage keys into Outlook add-in settings.
- */
-function migrateSettingsKeys() {
-  try {
-    const legacySettings = sessionStorage.getItem("my_sidekick_michael_settings");
-    const currentSettings = roamingStorage.getItem(SETTINGS_KEY);
-    if (!currentSettings && legacySettings) {
-      roamingStorage.setItem(SETTINGS_KEY, legacySettings);
-    }
-    sessionStorage.removeItem("my_sidekick_michael_settings");
-
-    const previousLocalSettings = localStorage.getItem("michael_settings");
-    if (!currentSettings && previousLocalSettings) {
-      roamingStorage.setItem(SETTINGS_KEY, previousLocalSettings);
-    }
-
-    const legacyTemplateDefaults = sessionStorage.getItem("michael_session_template_defaults");
-    const currentTemplateDefaults = roamingStorage.getItem(TEMPLATE_DEFAULTS_KEY);
-    if (!currentTemplateDefaults && legacyTemplateDefaults) {
-      roamingStorage.setItem(TEMPLATE_DEFAULTS_KEY, legacyTemplateDefaults);
-    }
-
-    const legacyModelCatalog = sessionStorage.getItem(MODEL_CATALOG_CACHE_KEY);
-    const currentModelCatalog = roamingStorage.getItem(MODEL_CATALOG_CACHE_KEY);
-    if (!currentModelCatalog && legacyModelCatalog) {
-      roamingStorage.setItem(MODEL_CATALOG_CACHE_KEY, legacyModelCatalog);
-    }
-
-    saveRoamingStoreAsync().catch((error) => {
-      console.error("Error saving migrated Outlook add-in settings:", error);
-    });
-  } catch {
-    // no-op
-  }
 }
 
 /**
@@ -208,36 +132,6 @@ function initializeSettingsTabs() {
   }
 }
 
-function readJsonStorage(key, fallbackValue) {
-  try {
-    const rawValue = roamingStorage.getItem(key);
-    return rawValue ? JSON.parse(rawValue) : fallbackValue;
-  } catch (error) {
-    console.error(`Error reading ${key}:`, error);
-    return fallbackValue;
-  }
-}
-
-function writeJsonStorage(key, value) {
-  roamingStorage.setItem(key, JSON.stringify(value));
-}
-
-function getSettings() {
-  return readJsonStorage(SETTINGS_KEY, createBlankSettings());
-}
-
-function saveSettingsToStore(settings) {
-  writeJsonStorage(SETTINGS_KEY, settings);
-}
-
-function getSavedTemplateDefaults() {
-  return readJsonStorage(TEMPLATE_DEFAULTS_KEY, createBlankPromptTemplates());
-}
-
-function saveTemplateDefaults(templates) {
-  writeJsonStorage(TEMPLATE_DEFAULTS_KEY, templates);
-}
-
 function getPromptFieldValue(templateKey) {
   const fieldId = PROMPT_FIELD_MAP[templateKey];
   const field = fieldId ? document.getElementById(fieldId) : null;
@@ -266,17 +160,12 @@ function applyPromptTemplatesToForm(templates) {
 }
 
 function getCachedModelCatalog() {
-  const cachedModels = readJsonStorage(MODEL_CATALOG_CACHE_KEY, []);
-  return Array.isArray(cachedModels) && cachedModels.length ? cachedModels : getDefaultZaiModels();
+  return resolveCachedCatalog(readCachedModelCatalog());
 }
 
 function persistModelCatalog(models) {
-  availableModelCatalog =
-    Array.isArray(models) && models.length ? [...models] : getDefaultZaiModels();
-  roamingStorage.setItem(MODEL_CATALOG_CACHE_KEY, JSON.stringify(availableModelCatalog));
-  saveRoamingStoreAsync().catch((error) => {
-    console.error("Error saving model catalog:", error);
-  });
+  setCatalog(models);
+  writeCachedModelCatalog(getCatalog());
 }
 
 function setSettingsStatus(elementId, message) {
@@ -333,7 +222,7 @@ function updateModelSelectOptions(selectId, models, selectedValue) {
 
 function syncModelDropdowns() {
   const settings = getSettings();
-  const models = availableModelCatalog.length ? availableModelCatalog : getCachedModelCatalog();
+  const models = getCatalog();
 
   updateModelSelectOptions("dropdown-model", models, settings.model || "");
   updateModelSelectOptions("dropdown-reply-model", models, settings.replyModel || "");
@@ -346,13 +235,13 @@ async function refreshModelCatalog(options = {}) {
   updateAuthenticationStatus();
 
   if (!apiKey) {
-    availableModelCatalog = getCachedModelCatalog();
+    setCatalog(getCachedModelCatalog());
     syncModelDropdowns();
     setSettingsStatus(
       "dropdown-model-status",
       "Using cached/fallback Z.AI models. Enter an API key in Settings > General to enable live refresh."
     );
-    return availableModelCatalog;
+    return getCatalog();
   }
 
   setSettingsStatus("dropdown-model-status", "Refreshing available Z.AI models...");
@@ -362,10 +251,10 @@ async function refreshModelCatalog(options = {}) {
     persistModelCatalog(liveModels);
     syncModelDropdowns();
     setSettingsStatus("dropdown-model-status", `Loaded ${liveModels.length} models from Z.AI.`);
-    return availableModelCatalog;
+    return getCatalog();
   } catch (error) {
     console.error("Error refreshing Z.AI model catalog:", error);
-    availableModelCatalog = getCachedModelCatalog();
+    setCatalog(getCachedModelCatalog());
     syncModelDropdowns();
     setSettingsStatus(
       "dropdown-model-status",
@@ -374,7 +263,7 @@ async function refreshModelCatalog(options = {}) {
     if (!silent) {
       showNotification(`Model refresh failed: ${error.message}`, "warning");
     }
-    return availableModelCatalog;
+    return getCatalog();
   }
 }
 
@@ -884,7 +773,7 @@ function loadDropdownSettings() {
       ...templates,
     });
 
-    availableModelCatalog = getCachedModelCatalog();
+    setCatalog(getCachedModelCatalog());
     syncModelDropdowns();
     updateAuthenticationStatus();
   } catch (error) {
@@ -899,110 +788,6 @@ function loadDropdownSettings() {
  */
 function applyFontSize(size) {
   document.documentElement.setAttribute("data-font-size", size || "medium");
-}
-
-// Get email content
-async function getEmailContent() {
-  return new Promise((resolve, reject) => {
-    Office.context.mailbox.item.body.getAsync("text", (result) => {
-      if (result.status === Office.AsyncResultStatus.Succeeded) {
-        resolve(result.value);
-      } else {
-        reject(new Error("Failed to get email content"));
-      }
-    });
-  });
-}
-
-// Generate content using Z.AI GLM Coding Plan
-async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
-  let model = "";
-
-  if (modelOverride) {
-    model = modelOverride;
-  } else {
-    try {
-      model = requireModel("model", "Primary model");
-    } catch (error) {
-      console.error("Error getting model from settings:", error);
-      throw error;
-    }
-  }
-
-  try {
-    return await generateText(prompt, {
-      apiKey,
-      model,
-      maxTokens: isTldr ? 800 : 8192,
-      temperature: 0.4,
-    });
-  } catch (error) {
-    console.error("Error generating content:", error);
-    throw error;
-  } finally {
-    // Hide loading spinner only if this is not a TL;DR request
-    if (!isTldr) {
-      document.getElementById("loading").style.display = "none";
-    }
-  }
-}
-
-// Generate TL;DR content
-async function generateTldrContent(prompt, apiKey, language = "Korean", modelOverride = null) {
-  const subject = Office.context.mailbox.item.subject;
-  const emailContent = await getEmailContent();
-
-  const tldrPrompt = requireTemplate("tldrPrompt", "TL;DR")
-    .replace("{subject}", subject)
-    .replace("{content}", emailContent)
-    .replace("{language}", language);
-
-  const content = await generateContent(tldrPrompt, apiKey, modelOverride, true);
-  return content;
-}
-
-// Get language display text
-// Get the configured Z.AI API key from Outlook add-in settings
-function getApiKey() {
-  const input = document.getElementById("dropdown-api-key");
-  if (input && typeof input.value === "string" && input.value.trim()) {
-    return input.value.trim();
-  }
-
-  const settings = getSettings();
-  return typeof settings.apiKey === "string" ? settings.apiKey.trim() : "";
-}
-
-// Get language from settings
-function getLanguage() {
-  const settings = getSettings();
-  return settings.defaultLanguage || DEFAULT_SETTINGS.defaultLanguage;
-}
-
-function getTemplateValue(templateKey) {
-  const settings = getSettings();
-  return settings.templates && typeof settings.templates[templateKey] === "string"
-    ? settings.templates[templateKey].trim()
-    : "";
-}
-
-function requireTemplate(templateKey, label) {
-  const template = getTemplateValue(templateKey);
-  if (!template) {
-    throw new Error(`${label} prompt is empty. Configure it in Settings > Templates.`);
-  }
-
-  return template;
-}
-
-function requireModel(settingKey, label) {
-  const settings = getSettings();
-  const model = typeof settings[settingKey] === "string" ? settings[settingKey].trim() : "";
-  if (!model) {
-    throw new Error(`${label} is empty. Select a model in Settings > General.`);
-  }
-
-  return model;
 }
 
 // Summarize email
