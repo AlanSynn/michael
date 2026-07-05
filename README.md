@@ -11,15 +11,39 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
 - **Translate & Summarize:** Get both a translation and a summary in one step.
 - **Reply Drafting:** Generate a reply draft from the current email.
 - **Calendar Event Creation:** Extract event details from email content and create calendar entries.
-- **Customizable Settings:**
-  - Enter the API key directly in the taskpane UI and save it in Outlook add-in settings.
-  - Choose the primary and reply models used for AI flows.
-  - Refresh the provider model catalog from Z.AI, with cached/fallback behavior if live discovery fails.
-  - Set default translation language and event-title language.
-  - Choose theme, font size, TL;DR mode, reply visibility, and autorun behavior.
-  - Configure each prompt individually: summarize, translate, translate+summarize, reply, quick translate command, TL;DR, calendar parse, and calendar check.
-  - Save prompt defaults in Outlook add-in settings, clear them, or load built-in defaults.
+- **Customizable Settings** (redesigned, theme-harmonized panel):
+  - **Account** — enter the Z.AI API key; it is saved in Outlook add-in settings (`Office.context.roamingSettings`).
+  - **Models** — choose primary + reply models; refresh the live Z.AI catalog with cached/fallback behavior.
+  - **Language & Output** — default language, event-title language, TL;DR toggle, show-reply toggle, result font size.
+  - **Appearance & Behavior** — theme, auto-run toggle + auto-run action.
+  - **Prompt Templates** — grouped into collapsible Email / Command & System / Calendar accordions; save, clear, copy, or export them.
+  - **Developer** — dev mode + dev server URL.
 - **Theme Support:** Light, dark, or system theme.
+
+## Install into Outlook for Mac
+
+> **2025 note:** recent Outlook for Mac builds removed the *Get Add-ins → Upload* UI path. Manifests must be placed in Outlook's `wef` documents folder, then Outlook restarted. The scripts below automate this.
+> Docs: [Sideload Office Add-ins on Mac](https://learn.microsoft.com/en-us/office/dev/add-ins/testing/sideload-an-office-add-in-on-mac).
+
+### Production (recommended)
+
+The deployed add-in lives at **`https://alansynn.com/michael/`**. Install its manifest:
+
+```bash
+npm run sideload:prod
+```
+
+This downloads `https://alansynn.com/michael/manifest.prod.xml` and copies it into Outlook's `wef` folder.
+
+### Development (localhost)
+
+```bash
+npm install
+npm start          # dev server on https://localhost:3000
+npm run sideload:mac   # installs the local manifest.xml (localhost)
+```
+
+After either command: **fully quit Outlook (Cmd+Q), reopen it, open an email, and click the Michael button.** The taskpane must open *embedded* — if a browser tab opens with a sideloading warning, the manifest is not installed; re-run the sideload script.
 
 ## Setup for Development
 
@@ -32,14 +56,18 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
    ```bash
    npm install
    ```
-3. **Start the development server**
+3. **Validate / test / build**
+   ```bash
+   npm run validate   # manifest schema check
+   npm test           # unit tests (node:test, no extra deps)
+   npm run build      # production bundle into ./dist
+   npm run build:dev  # development bundle (localhost URLs)
+   ```
+4. **Run the dev server + sideload**
    ```bash
    npm start
+   npm run sideload:mac
    ```
-   This starts the local add-in web server, typically at `https://localhost:3000`.
-4. **Sideload the add-in in Outlook**
-   Use `manifest.xml` from the repo root.
-   - Microsoft Docs: [Sideload Outlook add-ins for testing](https://learn.microsoft.com/en-us/office/dev/add-ins/outlook/sideload-outlook-add-ins-for-testing)
 
 ## Z.AI / GLM Coding Plan Configuration
 
@@ -55,7 +83,7 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
 
 1. Create a Z.AI API key from the Z.AI Open Platform / API Keys page.
 2. Open Michael inside Outlook.
-3. Enter the API key in **Settings → General**.
+3. Enter the API key in **Settings → Account**.
 4. Save settings. The key is stored in Outlook add-in settings (`Office.context.roamingSettings`).
 
 ### Endpoint and model guidance
@@ -90,12 +118,38 @@ Meet Michael, your AI sidekick for Outlook. Michael helps you summarize, transla
 
 ## Technology Stack
 
-- Office Add-ins Platform
-- JavaScript (ES6+)
-- HTML5 / CSS3
-- Webpack
-- Node.js / npm
+- Office Add-ins Platform (Outlook Mail, XML manifest, VersionOverrides V1_0 + V1_1)
+- JavaScript (ES modules) + `office.js`
+- HTML5 / CSS3 (theme-token CSS variables, no UI framework)
+- Webpack 5 + Babel
+- Node.js / npm; unit tests via the built-in `node:test` runner
 - Z.AI coding-plan chat-completions integration target
+
+## Project Structure
+
+```
+src/
+  taskpane/
+    index.js              Office.onReady + listener wiring (thin entry)
+    ui/                   flows, calendar, settings-view, dom (presentation)
+    generation.js         Z.AI orchestration over the shared client
+    storage.js            single Office.roamingSettings boundary
+    mailbox.js            thin async mailbox wrappers + flat event handlers
+    settings.js, prompts.js, theme.js, language.js, fonts.js, model-catalog.js   pure leaves (unit-tested)
+    prompt-templates.js   default settings + prompt templates
+  shared/zai.js           single Z.AI provider (chat + model discovery)
+  commands/commands.js    Quick Translate ribbon command (function-file)
+```
+
+Dependency direction is one-way (entry → ui → generation → storage/mailbox → pure leaves → shared/zai); no cycles.
+
+## Testing
+
+```bash
+npm test
+```
+
+Runs the built-in Node test runner over every `*.test.mjs`: the pure leaves (`theme`, `language`, `fonts`, `prompts`, `settings`, `model-catalog`, `prompt-templates`) and `shared/zai.js` (helpers + `fetch`-mocked `/models` discovery and `/chat/completions` generation). CI runs `validate → lint → test → build` before deploying.
 
 ## Reference Docs
 
