@@ -24,13 +24,27 @@ export default async (env, options) => {
   const config = {
     devtool: "source-map",
     entry: {
-      polyfill: ["core-js/stable", "regenerator-runtime/runtime"],
+      // No polyfill entry. babel.config.json is a bare @babel/preset-env with
+      // no useBuiltIns, so Babel transpiles SYNTAX only (async/await etc. are
+      // left native — the package.json browserslist "last 2 versions" target
+      // is modern enough). Importing core-js/stable + regenerator-runtime
+      // previously shipped a 232KB polyfill.js the Office webview never needs;
+      // both deps have been removed.
       taskpane: "./src/taskpane/index.js",
       commands: "./src/commands/commands.js",
     },
     output: {
       devtoolModuleFilenameTemplate: "webpack:///[resource-path]?[loaders]",
       clean: true,
+    },
+    optimization: {
+      // Keep each entry chunk self-contained. Webpack's default splitChunks
+      // extracts shared modules (zai.js etc.) into a separate chunk, which for
+      // this tiny 2-entry graph produced an orphan chunk + a broken <script src>
+      // reference in commands.html (a hashed filename that was never emitted,
+      // so the Quick Translate function-file would 404). Disabling splitting
+      // inlines shared code into taskpane.js + commands.js — predictable + small.
+      splitChunks: false,
     },
     resolve: {
       extensions: [".html", ".js"],
@@ -40,12 +54,9 @@ export default async (env, options) => {
         {
           test: /\.js$/,
           exclude: /node_modules/,
-          use: {
-            loader: "babel-loader",
-            options: {
-              presets: ["@babel/preset-env"],
-            },
-          },
+          // Bare @babel/preset-env config lives in babel.config.json so it
+          // applies uniformly; no inline override here.
+          use: "babel-loader",
         },
         {
           test: /\.html$/,
@@ -75,12 +86,12 @@ export default async (env, options) => {
       new HtmlWebpackPlugin({
         filename: "taskpane.html",
         template: "./src/taskpane/taskpane.html",
-        chunks: ["polyfill", "taskpane"],
+        chunks: ["taskpane"],
       }),
       new HtmlWebpackPlugin({
         filename: "commands.html",
         template: "./src/commands/commands.html",
-        chunks: ["polyfill", "commands"],
+        chunks: ["commands"],
       }),
       new CopyWebpackPlugin({
         patterns: [

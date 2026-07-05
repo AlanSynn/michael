@@ -4,7 +4,25 @@
 
 import { getDefaultZaiModels } from "../shared/zai.js";
 
+// Upper bound on the catalog. Z.AI returns ~30 glm-* models; a malformed
+// provider response or a stale cache blob should never be able to balloon the
+// in-memory catalog (and the model <select> DOM) into the thousands.
+const MAX_MODEL_CATALOG = 200;
+
 let catalog = getDefaultZaiModels();
+
+/**
+ * Coerce a candidate list into a bounded, non-empty array of strings, falling
+ * back to the default Z.AI models when the input is empty/invalid.
+ * @param {unknown} models
+ * @returns {string[]}
+ */
+function boundModels(models) {
+  if (!Array.isArray(models) || models.length === 0) {
+    return getDefaultZaiModels();
+  }
+  return models.slice(0, MAX_MODEL_CATALOG);
+}
 
 /** @returns {string[]} a defensive copy of the live catalog */
 export function getCatalog() {
@@ -13,7 +31,7 @@ export function getCatalog() {
 
 /** @param {string[]} models @returns {string[]} */
 export function setCatalog(models) {
-  catalog = Array.isArray(models) && models.length ? [...models] : getDefaultZaiModels();
+  catalog = boundModels(models);
   return getCatalog();
 }
 
@@ -24,5 +42,5 @@ export function setCatalog(models) {
  * @returns {string[]}
  */
 export function getCachedModelCatalog(cached) {
-  return Array.isArray(cached) && cached.length ? [...cached] : getDefaultZaiModels();
+  return boundModels(cached);
 }

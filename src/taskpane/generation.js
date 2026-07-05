@@ -20,9 +20,16 @@ const DEFAULT_TEMPERATURE = 0.4;
 
 /**
  * Generate text via Z.AI. Callers own the loading-spinner lifecycle (flows.js
- * and calendar.js already hide it in their own finally blocks).
+ * and calendar.js already hide it in their own finally blocks). Pass an
+ * AbortSignal to make the request cancellable (see flows.js beginFlow).
  */
-export async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
+export async function generateContent(
+  prompt,
+  apiKey,
+  modelOverride = null,
+  isTldr = false,
+  signal = null
+) {
   let model = "";
 
   if (modelOverride) {
@@ -42,6 +49,7 @@ export async function generateContent(prompt, apiKey, modelOverride = null, isTl
       model,
       maxTokens: isTldr ? TLDR_MAX_TOKENS : FULL_MAX_TOKENS,
       temperature: DEFAULT_TEMPERATURE,
+      signal: signal || undefined,
     });
   } catch (error) {
     console.error("Error generating content:", error);
@@ -53,7 +61,8 @@ export async function generateTldrContent(
   prompt,
   apiKey,
   language = "Korean",
-  modelOverride = null
+  modelOverride = null,
+  signal = null
 ) {
   const subject = getSubject();
   const emailContent = await getEmailContent();
@@ -63,7 +72,7 @@ export async function generateTldrContent(
     .replace("{content}", emailContent)
     .replace("{language}", language);
 
-  return generateContent(tldrPrompt, apiKey, modelOverride, true);
+  return generateContent(tldrPrompt, apiKey, modelOverride, true, signal);
 }
 
 export function getLanguage() {

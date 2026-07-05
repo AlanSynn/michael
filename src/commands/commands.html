@@ -18,9 +18,13 @@
       content="default-src 'self'; script-src 'self' https://appsforoffice.microsoft.com https://ajax.aspnetcdn.com; connect-src 'self' https://api.z.ai https://browser.pipe.aria.microsoft.com; base-uri 'none'; object-src 'none';"
     />
 
-    <!-- Office JavaScript API -->
+    <!-- Office JavaScript API (CDN). The entry chunk (commands.js) is injected
+         by HtmlWebpackPlugin (chunks: ["commands"]) — do NOT add a manual
+         <script src="commands.js"> here: html-loader treats a relative src as
+         an asset, emits a second hashed copy of the entry, and the resulting
+         realContentHash mismatch leaves commands.html referencing a file that
+         is never emitted (HTTP 404 on the function-file). -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <script type="text/javascript" src="commands.js"></script>
 </head>
 
 <body>

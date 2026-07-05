@@ -61,7 +61,7 @@ function wireListeners() {
   on("dropdown-clear-templates", "click", clearTemplates);
   on("dropdown-copy-templates", "click", copyAllTemplatesToClipboard);
   on("dropdown-export-markdown", "click", exportTemplatesAsMarkdown);
-  on("dropdown-refresh-models", "click", () => refreshModelCatalog());
+  on("dropdown-refresh-models", "click", () => refreshModelCatalog({ force: true }));
   on("dropdown-api-key", "input", updateAuthenticationStatus);
 
   // Dev-mode toggle reveals the dev-server field group.

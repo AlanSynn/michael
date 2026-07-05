@@ -40,10 +40,8 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
-    "core-js": "^3.36.0",
     "dompurify": "^3.4.11",
-    "marked": "^18.0.5",
-    "regenerator-runtime": "^0.14.1"
+    "marked": "^18.0.5"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",

@@ -271,9 +271,23 @@ function syncModelDropdowns() {
 /** Refresh the Z.AI model catalog (live when an API key is present, else cached). */
 export async function refreshModelCatalog(options = {}) {
   const silent = options.silent === true;
+  const force = options.force === true;
   const apiKey = getApiKey();
 
   updateAuthenticationStatus();
+
+  // Serve the in-memory catalog when we already have models and the caller
+  // did not force a live refresh. The catalog rarely changes, but opening
+  // Settings was firing a /models request every time (a network round-trip
+  // + a lingering closure per open). The explicit "Refresh models" button
+  // passes { force: true } to bypass this and hit the network.
+  const current = getCatalog();
+  if (!force && current && current.length > 0) {
+    setCatalog(current);
+    syncModelDropdowns();
+    setText("dropdown-model-status", `Using ${current.length} cached Z.AI models.`);
+    return current;
+  }
 
   if (!apiKey) {
     setCatalog(getCachedCatalog());

@@ -97,6 +97,7 @@ function createTimeoutSignal(timeoutMs) {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   return {
+    controller,
     signal: controller.signal,
     clear() {
       clearTimeout(timeoutId);
@@ -146,8 +147,26 @@ function extractModelNames(payload) {
   return dedupeModels(discovered);
 }
 
-async function fetchJson(url, options = {}, timeoutMs = MODEL_DISCOVERY_TIMEOUT_MS) {
+async function fetchJson(
+  url,
+  options = {},
+  timeoutMs = MODEL_DISCOVERY_TIMEOUT_MS,
+  externalSignal
+) {
   const timeout = createTimeoutSignal(timeoutMs);
+
+  // Bridge an caller-supplied AbortSignal to the timeout controller so a
+  // cancel from the UI (e.g. the user switched emails mid-request) aborts the
+  // in-flight fetch immediately. Kept distinct from a timeout so callers can
+  // suppress the cancel without swallowing real timeouts.
+  const onExternalAbort = () => timeout.controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      timeout.controller.abort();
+    } else {
+      externalSignal.addEventListener("abort", onExternalAbort, { once: true });
+    }
+  }
 
   try {
     const response = await fetch(url, { ...options, signal: timeout.signal });
@@ -160,11 +179,19 @@ async function fetchJson(url, options = {}, timeoutMs = MODEL_DISCOVERY_TIMEOUT_
     return payload;
   } catch (error) {
     if (error?.name === "AbortError") {
+      // Caller cancelled → surface the raw AbortError so the UI can ignore it.
+      // Timeout (no external cancel) → surface the friendly timeout message.
+      if (externalSignal && externalSignal.aborted) {
+        throw error;
+      }
       throw new Error(`Request timed out after ${Math.ceil(timeoutMs / 1000)} seconds.`);
     }
 
     throw error;
   } finally {
+    if (externalSignal) {
+      externalSignal.removeEventListener("abort", onExternalAbort);
+    }
     timeout.clear();
   }
 }
@@ -201,7 +228,8 @@ async function generateText(prompt, options = {}) {
         stream: false,
       }),
     },
-    options.timeoutMs ?? CHAT_COMPLETION_TIMEOUT_MS
+    options.timeoutMs ?? CHAT_COMPLETION_TIMEOUT_MS,
+    options.signal
   );
 
   const content = normalizeTextContent(payload?.choices?.[0]?.message?.content);

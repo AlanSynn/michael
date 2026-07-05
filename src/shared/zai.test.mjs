@@ -153,6 +153,38 @@ test("generateText rejects with the provider error on non-ok response", async ()
   );
 });
 
+test("generateText surfaces a raw AbortError (not a timeout) when the caller cancels", async () => {
+  // Simulate the real fetch, which rejects with an AbortError when its signal
+  // is aborted. fetchJson must rethrow that raw AbortError so the UI layer can
+  // recognise the cancel and stay silent — rather than labelling it a timeout.
+  mockFetch(({ options }) => {
+    if (options.signal && options.signal.aborted) {
+      const err = new Error("The user aborted a request.");
+      err.name = "AbortError";
+      throw err;
+    }
+    return { ok: true, json: async () => ({ choices: [{ message: { content: "x" } }] }) };
+  });
+
+  const controller = new AbortController();
+  controller.abort();
+
+  await assert.rejects(
+    () => generateText("p", { apiKey: "key", signal: controller.signal }),
+    (err) => err.name === "AbortError"
+  );
+});
+
+test("generateText without a signal still completes normally", async () => {
+  mockFetch(() => ({
+    ok: true,
+    json: async () => ({ choices: [{ message: { content: "ok" } }] }),
+  }));
+
+  const text = await generateText("p", { apiKey: "key" });
+  assert.equal(text, "ok");
+});
+
 test("defaults are populated and defensive copies", () => {
   assert.ok(getDefaultZaiModels().length >= 1);
   assert.equal(getDefaultZaiModel(), "glm-4.5-air");
