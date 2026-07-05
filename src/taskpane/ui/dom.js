@@ -38,10 +38,20 @@ export function escapeHtml(value) {
  * Render untrusted markdown to sanitized HTML. LLM/email output reaches the DOM
  * only through this so script/event-handler payloads cannot execute (the taskpane
  * has access to roamingSettings, i.e. the API key). DOMPurify keeps safe tags.
+ *
+ * FAIL CLOSED: if either marked or DOMPurify failed to load (CDN blocked by a
+ * proxy/ad-blocker, transient outage), never insert raw markup — return escaped
+ * plain text and warn the user. Returning the raw parsed HTML here would be an
+ * XSS sink that exposes the saved API key.
  */
 export function renderMarkdown(content) {
-  const html = marked.parse(content || "");
-  return typeof DOMPurify !== "undefined" ? DOMPurify.sanitize(html) : html;
+  if (typeof marked === "undefined" || typeof DOMPurify === "undefined") {
+    // Fail closed: never insert raw markup. The degraded plain-text rendering
+    // is itself the visible signal; console.warn is for developers.
+    console.warn("[Michael] Markdown libraries failed to load; rendering plain text.");
+    return escapeHtml(content || "");
+  }
+  return DOMPurify.sanitize(marked.parse(content || ""));
 }
 
 /** Shorthand getElementById. Returns the element or null. */
