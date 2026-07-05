@@ -1,9 +1,8 @@
 /* global document, Office */
 
 // Taskpane entry point. Owns Office.onReady + DOM listener wiring + the single
-// flat ItemChanged handler (R3: the prior nested addHandlerAsync/register
-// chains were dead). Dead initializeApp/loadSettings/setTheme/setFontSize were
-// dropped (R9) — every section already has the correct initial inline state.
+// flat ItemChanged handler. (Earlier builds nested addHandlerAsync/register
+// chains that were dead; they were collapsed into one flat registration.)
 
 import { migrateSettingsKeys } from "./storage.js";
 import { onItemChanged, onSettingsChanged as registerSettingsChanged } from "./mailbox.js";
@@ -97,7 +96,7 @@ function bootstrapOutlook() {
   // Re-apply the theme when Office settings change (only when following Office).
   registerSettingsChanged(onSettingsChanged);
 
-  // ONE flat ItemChanged handler (R3): autorun the configured action and refresh
+  // ONE flat ItemChanged handler: autorun the configured action and refresh
   // the calendar-button state for the newly selected item.
   onItemChanged(() => {
     runAutorun();

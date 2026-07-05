@@ -2,9 +2,7 @@
 
 // Function-file for the "Quick Translate" ribbon command. Imports the same
 // shared Z.AI client, language map, prompt builder, storage, and mailbox
-// facades as the taskpane, so there is a single implementation of each (the
-// prior CJS zaiClient/zaiConfig and inline mailbox/settings readers were
-// duplicated across the taskpane and function-file).
+// facades as the taskpane, so there is a single implementation of each.
 import { generateText, getDefaultZaiModel } from "../shared/zai.js";
 import { getLanguageText } from "../taskpane/language.js";
 import { fillTemplate } from "../taskpane/prompts.js";

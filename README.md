@@ -83,7 +83,7 @@ After either command: **fully quit Outlook (Cmd+Q), reopen it, open an email, an
 
 1. Create a Z.AI API key from the Z.AI Open Platform / API Keys page.
 2. Open Michael inside Outlook.
-3. Enter the API key in **Settings → Account**.
+3. Enter the API key in **Settings → General** (Account section).
 4. Save settings. The key is stored in Outlook add-in settings (`Office.context.roamingSettings`).
 
 ### Endpoint and model guidance
@@ -122,7 +122,7 @@ After either command: **fully quit Outlook (Cmd+Q), reopen it, open an email, an
 - JavaScript (ES modules) + `office.js`
 - HTML5 / CSS3 (theme-token CSS variables, no UI framework)
 - Webpack 5 + Babel
-- Node.js / npm; unit tests via the built-in `node:test` runner
+- Node.js / npm; unit tests via the built-in `node:test` runner, e2e via Playwright
 - Z.AI coding-plan chat-completions integration target
 
 ## Project Structure
@@ -132,10 +132,11 @@ src/
   taskpane/
     index.js              Office.onReady + listener wiring (thin entry)
     ui/                   flows, calendar, settings-view, dom (presentation)
-    generation.js         Z.AI orchestration over the shared client
+    ui/dom.js             DOM helpers + getApiKey + the renderMarkdown sanitizer
+    generation.js         Z.AI orchestration over the shared client (DOM-free)
     storage.js            single Office.roamingSettings boundary
     mailbox.js            thin async mailbox wrappers + flat event handlers
-    settings.js, prompts.js, theme.js, language.js, fonts.js, model-catalog.js   pure leaves (unit-tested)
+    settings.js, prompts.js, theme.js, language.js, model-catalog.js   pure leaves (unit-tested)
     prompt-templates.js   default settings + prompt templates
   shared/zai.js           single Z.AI provider (chat + model discovery)
   commands/commands.js    Quick Translate ribbon command (function-file)
@@ -146,10 +147,19 @@ Dependency direction is one-way (entry → ui → generation → storage/mailbox
 ## Testing
 
 ```bash
-npm test
+npm test           # unit tests (node:test) + jsdom DOM-interaction tests
+npm run build      # Playwright e2e serves the built ./dist
+npm run test:e2e   # Playwright smoke + office.js-mocked integration
 ```
 
-Runs the built-in Node test runner over every `*.test.mjs`: the pure leaves (`theme`, `language`, `fonts`, `prompts`, `settings`, `model-catalog`, `prompt-templates`) and `shared/zai.js` (helpers + `fetch`-mocked `/models` discovery and `/chat/completions` generation). CI runs `validate → lint → test → build` before deploying.
+Unit tests cover the pure leaves (`theme`, `language`, `prompts`, `settings`,
+`model-catalog`, `prompt-templates`), `shared/zai.js` (`fetch`-mocked `/models`
+discovery and `/chat/completions` generation), and `ui/dom.js` (jsdom, against
+the real `taskpane.html`). The Playwright suite gates on console errors / CSP
+violations and verifies bootstrap wiring with a stubbed Office host.
+
+CI runs `validate → lint → test → build → test:e2e` before deploying. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the full `npm` script reference.
 
 ## Reference Docs
 
@@ -159,6 +169,20 @@ Runs the built-in Node test runner over every `*.test.mjs`: the pure leaves (`th
 - Chat Completion model list: <https://docs.z.ai/api-reference/llm/chat-completion>
 - GLM-4.5 / GLM-4.5-Air overview: <https://docs.z.ai/guides/llm/glm-4.5>
 
+## Security
+
+- **API key storage** — the Z.AI key is stored only in Outlook add-in settings
+  (`Office.context.roamingSettings`), never in browser `localStorage` or logs.
+  It is sent exclusively to `https://api.z.ai`.
+- **Content sanitization** — email/LLM markdown reaches the DOM only through
+  `renderMarkdown` (`marked` + `DOMPurify`), which is bundled (no CDN/SRI) and
+  fail-closed. `escapeHtml` is used for plain-text concatenation.
+- **Content-Security-Policy** — the taskpane ships a restrictive CSP
+  (`connect-src 'self' https://api.z.ai`; no `unsafe-inline` scripts).
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) → Security review checklist. Report
+vulnerabilities privately to the maintainer rather than opening a public issue.
+
 ## License
 
-MIT License
+MIT License — see [LICENSE](LICENSE).

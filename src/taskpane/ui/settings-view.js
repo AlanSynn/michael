@@ -1,7 +1,7 @@
 /* global document, console, navigator, setTimeout, URL, Blob, Event, Office */
 
 // Settings panel controller: tab switching, form load/save, model-catalog UI
-// glue, theme application (R8: single source of truth via resolveTheme), and
+// glue, theme application (resolveTheme is the single fallback source), and
 // the prompt-template toolbar. Reaches into storage + generation facades.
 
 import { fetchAvailableModels, getDefaultZaiModels } from "../../shared/zai.js";
@@ -609,7 +609,7 @@ export async function resetAllSettings() {
   }
 }
 
-// --- Theme application (R8: resolveTheme is the single fallback source) ------
+// --- Theme application (resolveTheme is the single fallback source) --------
 
 /**
  * Apply the current theme to <body>, switching logos for contrast.

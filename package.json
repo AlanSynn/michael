@@ -4,9 +4,9 @@
   "description": "Michael — an Outlook add-in that summarizes, translates, and replies to email via Z.AI GLM.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AlanSynn/Michael.git"
+    "url": "https://github.com/AlanSynn/michael.git"
   },
-  "homepage": "https://github.com/AlanSynn/Michael",
+  "homepage": "https://github.com/AlanSynn/michael",
   "bugs": {
     "url": "https://github.com/AlanSynn/Michael/issues"
   },

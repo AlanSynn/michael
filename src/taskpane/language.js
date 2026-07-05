@@ -1,5 +1,5 @@
 // Language-code → display name. Shared by the taskpane flows and the commands
-// function-file (previously duplicated verbatim in taskpane.js and commands.js).
+// function-file.
 
 /** @type {ReadonlyArray<{value: string, label: string}>} */
 export const LANGUAGE_OPTIONS = Object.freeze([
