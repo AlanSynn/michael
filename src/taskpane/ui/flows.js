@@ -86,6 +86,8 @@ export async function summarizeEmail() {
     }
   } catch (error) {
     showNotification(`Error: ${error.message}`, "error");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -125,6 +127,8 @@ export async function translateEmail() {
     }
   } catch (error) {
     showNotification(`Error: ${error.message}`, "error");
+  } finally {
+    hideLoading();
   }
 }
 
@@ -165,6 +169,8 @@ export async function translateAndSummarizeEmail() {
     }
   } catch (error) {
     showNotification(`Error: ${error.message}`, "error");
+  } finally {
+    hideLoading();
   }
 }
 

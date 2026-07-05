@@ -10,6 +10,13 @@ import { getEmailContent, getSubject } from "./mailbox.js";
 
 export { fetchAvailableModels };
 
+// Generation tuning. TL;DR is capped tight so the quick summary renders first;
+// full generations get the larger budget. Temperature is low for deterministic
+// translation/summary output.
+const TLDR_MAX_TOKENS = 800;
+const FULL_MAX_TOKENS = 8192;
+const DEFAULT_TEMPERATURE = 0.4;
+
 /**
  * Generate text via Z.AI. Hides the loading spinner on completion for non-TL;DR
  * requests (preserves prior behavior; UI coupling to be lifted in a later pass).
@@ -32,8 +39,8 @@ export async function generateContent(prompt, apiKey, modelOverride = null, isTl
     return await generateText(prompt, {
       apiKey,
       model,
-      maxTokens: isTldr ? 800 : 8192,
-      temperature: 0.4,
+      maxTokens: isTldr ? TLDR_MAX_TOKENS : FULL_MAX_TOKENS,
+      temperature: DEFAULT_TEMPERATURE,
     });
   } catch (error) {
     console.error("Error generating content:", error);

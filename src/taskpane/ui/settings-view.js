@@ -136,7 +136,9 @@ export function syncSegmentedToggles() {
     }
     const value = select.value;
     group.querySelectorAll(".segmented-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.getAttribute("data-value") === value);
+      const isActive = btn.getAttribute("data-value") === value;
+      btn.classList.toggle("active", isActive);
+      btn.setAttribute("aria-pressed", String(isActive));
     });
   });
   updateAutorunOptionState();
