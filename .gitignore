@@ -225,3 +225,8 @@ tags
 .omc/plans/
 .omc/research/
 .omc/ultragoal/
+
+### Playwright ###
+/test-results/
+/playwright-report/
+/playwright/.cache/

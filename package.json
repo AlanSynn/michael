@@ -11,6 +11,7 @@
     "url": "https://github.com/AlanSynn/Michael/issues"
   },
   "license": "MIT",
+  "type": "module",
   "engines": {
     "node": ">=20"
   },

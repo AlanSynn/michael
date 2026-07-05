@@ -1,10 +1,12 @@
-/* eslint-disable no-undef */
+// Webpack build config for the Michael Outlook add-in. ESM (package.json
+// "type": "module"). Produces two entry chunks — taskpane + commands — and
+// rewrites the dev manifest into the prod manifest (origin + AppDomain strip).
 
-const devCerts = require("office-addin-dev-certs");
-const CopyWebpackPlugin = require("copy-webpack-plugin");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const path = require("path");
-const webpack = require("webpack");
+import devCerts from "office-addin-dev-certs";
+import CopyWebpackPlugin from "copy-webpack-plugin";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import path from "node:path";
+import webpack from "webpack";
 
 const urlDev = "https://localhost:3000/";
 const urlProd = "https://alansynn.com/michael/";
@@ -17,7 +19,7 @@ async function getHttpsOptions() {
   return { cacert: httpsOptions.ca, key: httpsOptions.key, cert: httpsOptions.cert };
 }
 
-module.exports = async (env, options) => {
+export default async (env, options) => {
   const dev = options.mode === "development";
   const buildType = dev ? "dev" : "prod";
   const config = {
