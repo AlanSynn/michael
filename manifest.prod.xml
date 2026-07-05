@@ -17,10 +17,11 @@
   <HighResolutionIconUrl DefaultValue="https://alansynn.com/michael/assets/michael-black.png"/>
   <SupportUrl DefaultValue="https://github.com/AlanSynn/Michael"/>
 
-  <!-- Allowed domains -->
+  <!-- Allowed domains. AppDomains govern navigation/iframes/dialogs the add-in
+       opens — outbound fetch to api.z.ai is authorized by CSP connect-src, not
+       here, so listing the API host only widens the trust surface needlessly. -->
   <AppDomains>
     <AppDomain>https://alansynn.com</AppDomain>
-    <AppDomain>https://api.z.ai</AppDomain>
   </AppDomains>
 
   <Hosts>
