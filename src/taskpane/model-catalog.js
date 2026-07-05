@@ -2,7 +2,7 @@
 // Persistence lives in storage.js; this module owns only the live copy so it
 // can be unit-tested without Office.
 
-import { getDefaultZaiModels } from "../shared/zai.js";
+import { dedupeModels, getDefaultZaiModels } from "../shared/zai.js";
 
 // Upper bound on the catalog. Z.AI returns ~30 glm-* models; a malformed
 // provider response or a stale cache blob should never be able to balloon the
@@ -21,7 +21,12 @@ function boundModels(models) {
   if (!Array.isArray(models) || models.length === 0) {
     return getDefaultZaiModels();
   }
-  return models.slice(0, MAX_MODEL_CATALOG);
+  // Dedupe before bounding. A stale cache blob or a provider response that
+  // double-lists a model otherwise renders duplicate <option>s (the live
+  // fetch already dedupes via extractModelNames, but cached/persisted lists
+  // and direct setCatalog callers bypassed that).
+  const cleaned = dedupeModels(models.filter((m) => typeof m === "string" && m.trim()));
+  return cleaned.length ? cleaned.slice(0, MAX_MODEL_CATALOG) : getDefaultZaiModels();
 }
 
 /** @returns {string[]} a defensive copy of the live catalog */

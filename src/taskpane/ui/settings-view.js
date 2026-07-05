@@ -67,6 +67,11 @@ function persistModelCatalog(models) {
 
 // --- Settings view visibility + tabs ----------------------------------------
 
+// Remembers the element that had focus when Settings opened so we can return
+// focus there on close (keyboard users would otherwise be stranded on the
+// hidden main content).
+let settingsReturnFocus = null;
+
 /** Toggle the settings panel over the main content area. */
 export function toggleSettingsView() {
   const settingsView = $("settings-view");
@@ -80,11 +85,22 @@ export function toggleSettingsView() {
   if (isVisible) {
     settingsView.style.display = "none";
     appBody.style.display = "flex";
+    if (settingsReturnFocus && document.contains(settingsReturnFocus)) {
+      settingsReturnFocus.focus();
+    }
+    settingsReturnFocus = null;
   } else {
+    settingsReturnFocus = document.activeElement;
     settingsView.style.display = "block";
     appBody.style.display = "none";
     loadDropdownSettings();
     refreshModelCatalog({ silent: true });
+    // Move focus into the panel so the keyboard user lands on a real control
+    // and Escape (registered in initSettingsInteractions) can dismiss it.
+    const closeBtn = $("close-settings-view");
+    if (closeBtn) {
+      closeBtn.focus();
+    }
   }
 }
 
@@ -184,6 +200,18 @@ export function initSettingsInteractions() {
       }
       header.closest("[data-accordion-item]").classList.toggle("open");
     });
+  });
+
+  // Escape dismisses the settings panel (returns focus via toggleSettingsView).
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    const settingsView = $("settings-view");
+    if (settingsView && settingsView.style.display === "block") {
+      event.preventDefault();
+      toggleSettingsView();
+    }
   });
 }
 
@@ -375,6 +403,13 @@ export function loadDropdownSettings() {
 
 /** Persist the Settings form into roaming settings and re-apply live state. */
 export async function saveDropdownSettings() {
+  // Snapshot the persisted blob BEFORE staging the new values. If the flush to
+  // Exchange fails, we roll the in-memory roamingSettings back so what the UI
+  // reads next matches what is actually persisted — otherwise the form, the
+  // in-memory store, and Exchange would diverge silently.
+  const previousSettingsJson = JSON.stringify(getSettings());
+  const previousTheme = roamingStorage.getItem("theme");
+
   try {
     const settings = getSettings();
 
@@ -427,8 +462,21 @@ export async function saveDropdownSettings() {
     showNotification("All settings saved successfully");
     toggleSettingsView();
   } catch (error) {
+    // Roll the staged settings + theme back to the pre-save snapshot so the
+    // in-memory store does not hold values Exchange never accepted.
+    try {
+      saveSettingsToStore(JSON.parse(previousSettingsJson));
+      if (previousTheme !== null) {
+        roamingStorage.setItem("theme", previousTheme);
+      } else {
+        roamingStorage.removeItem("theme");
+      }
+    } catch (rollbackError) {
+      console.error("Error rolling back settings after failed save:", rollbackError);
+    }
     console.error("Error saving Outlook settings:", error);
-    showNotification(`Failed to save settings: ${error.message}`, "error");
+    const message = error && error.message ? error.message : String(error);
+    showNotification(`Failed to save settings: ${message}`, "error");
   }
 }
 
@@ -644,9 +692,10 @@ export function applyCurrentTheme() {
   document.body.classList.toggle("dark-theme", resolved === "dark");
 
   // ----- Logo switching (white on dark, black on light) -----
+  // #brand-logo was removed from the markup; only the sideload + landing
+  // banners switch. Kept the theme-driven swap for those two.
   const sideloadLogo = $("sideload-logo");
   const landingLogo = $("landing-logo-main");
-  const brandLogo = $("brand-logo");
   const isDark = resolved === "dark";
 
   if (sideloadLogo) {
@@ -658,9 +707,6 @@ export function applyCurrentTheme() {
     landingLogo.src = isDark
       ? getAssetPath("meet-michael-white.png")
       : getAssetPath("meet-michael-black.png");
-  }
-  if (brandLogo) {
-    brandLogo.src = isDark ? getAssetPath("michael-white.png") : getAssetPath("michael-black.png");
   }
 }
 

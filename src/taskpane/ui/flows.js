@@ -1,4 +1,4 @@
-/* global document, console, AbortController */
+/* global document, console */
 
 // Email action flows: summarize, translate, translate+summarize, reply, plus
 // runAutorun() which dispatches the configured auto-action. Each flow builds
@@ -25,43 +25,19 @@ import {
   updateResults,
   updateExpandButton,
   formatReplyOutput,
+  stampResultType,
   copyReply,
   getTldrModeSetting,
   getApiKey,
 } from "./dom.js";
 import { toggleSettingsView, getMissingApiKeyMessage } from "./settings-view.js";
+import { beginFlow, isActiveFlow, isCancelError } from "./flow-control.js";
 
-// --- request cancellation ---------------------------------------------------
-// Only one generation flow runs at a time. Starting a new flow — a button
-// click, or an autorun fired by switching emails — aborts the previous
-// in-flight request. This prevents a late result from overwriting the current
-// UI and releases the superseded flow's closures promptly. Under rapid email
-// switching (autorun fires on every ItemChanged) unbounded in-flight requests
-// were the single biggest source of memory growth + stale results.
-let activeFlowController = null;
-
-/** Abort any in-flight flow and return a fresh signal for the new one. */
-function beginFlow() {
-  if (activeFlowController) {
-    activeFlowController.abort();
-  }
-  activeFlowController = new AbortController();
-  return activeFlowController.signal;
-}
-
-/** True when the error is an AbortError from a superseded (cancelled) flow. */
-function isCancelError(error) {
-  return Boolean(error) && error.name === "AbortError";
-}
-
-/**
- * True when `signal` still belongs to the active flow. A superseded flow must
- * not touch the loading spinner or results — the newer flow owns the UI now,
- * so we bail before every DOM mutation.
- */
-function isActiveFlow(signal) {
-  return activeFlowController !== null && activeFlowController.signal === signal;
-}
+// Only one generation flow runs at a time. beginFlow() aborts the previous
+// in-flight request; isActiveFlow(signal) guards every DOM mutation so a late
+// result from a superseded flow cannot overwrite the current UI. The shared
+// controller (flow-control.js) also covers the calendar parse, so an email
+// flow and a calendar extraction cannot race on the result-section DOM.
 
 /** Run the configured auto-action for the current item, if any. */
 export function runAutorun() {
@@ -138,7 +114,11 @@ export async function summarizeEmail() {
       showResults(summary, TYPES.SUMMARIZE);
     }
   } catch (error) {
-    if (isCancelError(error)) return;
+    // Bail on a cancel OR if this flow was superseded mid-flight: a late
+    // non-Abort rejection from a cancelled flow must not toast over the
+    // active flow's result. The isActiveFlow gate was already enforced before
+    // every successful DOM mutation; this extends it to the error path.
+    if (isCancelError(error) || !isActiveFlow(signal)) return;
     if (error && error.code === "NO_ITEM") {
       showNotification("Select an email first.", "info");
       return;
@@ -194,7 +174,11 @@ export async function translateEmail() {
       showResults(translation, TYPES.TRANSLATE);
     }
   } catch (error) {
-    if (isCancelError(error)) return;
+    // Bail on a cancel OR if this flow was superseded mid-flight: a late
+    // non-Abort rejection from a cancelled flow must not toast over the
+    // active flow's result. The isActiveFlow gate was already enforced before
+    // every successful DOM mutation; this extends it to the error path.
+    if (isCancelError(error) || !isActiveFlow(signal)) return;
     if (error && error.code === "NO_ITEM") {
       showNotification("Select an email first.", "info");
       return;
@@ -251,7 +235,11 @@ export async function translateAndSummarizeEmail() {
       showResults(result, TYPES.TRANSLATE_SUMMARIZE);
     }
   } catch (error) {
-    if (isCancelError(error)) return;
+    // Bail on a cancel OR if this flow was superseded mid-flight: a late
+    // non-Abort rejection from a cancelled flow must not toast over the
+    // active flow's result. The isActiveFlow gate was already enforced before
+    // every successful DOM mutation; this extends it to the error path.
+    if (isCancelError(error) || !isActiveFlow(signal)) return;
     if (error && error.code === "NO_ITEM") {
       showNotification("Select an email first.", "info");
       return;
@@ -310,6 +298,11 @@ export async function generateReply() {
       resultSection.style.display = "block";
     }
 
+    // Stamp the result type + structured Subject/body so copyResult/copyReply
+    // use the captured text instead of inferring "is this a reply?" from the
+    // rendered markup (which false-positive'd on summaries quoting Subject:).
+    stampResultType("reply", formattedReply.raw);
+
     const copyReplyButton = document.getElementById("copy-reply");
     const copyResultButton = document.getElementById("copy-result");
     if (copyReplyButton) {
@@ -319,7 +312,11 @@ export async function generateReply() {
       copyResultButton.style.display = "none";
     }
   } catch (error) {
-    if (isCancelError(error)) return;
+    // Bail on a cancel OR if this flow was superseded mid-flight: a late
+    // non-Abort rejection from a cancelled flow must not toast over the
+    // active flow's result. The isActiveFlow gate was already enforced before
+    // every successful DOM mutation; this extends it to the error path.
+    if (isCancelError(error) || !isActiveFlow(signal)) return;
     if (error && error.code === "NO_ITEM") {
       showNotification("Select an email first.", "info");
       return;

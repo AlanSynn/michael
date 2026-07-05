@@ -150,7 +150,7 @@ Required JSON format:
 {
   "subject": "Meeting title",
   "body": {
-    "contentType": "HTML",
+    "contentType": "Text",
     "content": "Meeting description"
   },
   "start": {

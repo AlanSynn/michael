@@ -18,6 +18,17 @@ Object.defineProperty(globalThis, "navigator", {
   configurable: true,
 });
 
+// jsdom has no clipboard; stub writeText so copyResult/copyReply are testable.
+let clipboardText = null;
+Object.defineProperty(dom.window.navigator, "clipboard", {
+  value: {
+    writeText: async (text) => {
+      clipboardText = text;
+    },
+  },
+  configurable: true,
+});
+
 const {
   showNotification,
   showLoading,
@@ -27,6 +38,10 @@ const {
   expandContent,
   updateExpandButton,
   updateReplyButtonVisibility,
+  stampResultType,
+  copyResult,
+  copyReply,
+  formatReplyOutput,
   TYPES,
 } = await import("./dom.js");
 
@@ -104,4 +119,58 @@ test("updateReplyButtonVisibility toggles #generate-reply display", () => {
   assert.equal(document.getElementById("generate-reply").style.display, "inline-block");
   updateReplyButtonVisibility(false);
   assert.equal(document.getElementById("generate-reply").style.display, "none");
+});
+
+test("stampResultType records the type (+ optional reply raw) on #result-section", () => {
+  stampResultType("reply", "Subject: Hi\n\nBody text");
+  const section = document.getElementById("result-section");
+  assert.equal(section.getAttribute("data-result-type"), "reply");
+  assert.equal(section.getAttribute("data-reply-raw"), "Subject: Hi\n\nBody text");
+
+  stampResultType("summarize");
+  assert.equal(section.getAttribute("data-result-type"), "summarize");
+  assert.equal(section.hasAttribute("data-reply-raw"), false);
+});
+
+test("copyResult uses the structured reply text (not Subject-substring inference)", () => {
+  // Regression: a summary quoting "Subject:" used to be misread as a reply.
+  clipboardText = null;
+  stampResultType("reply", "Subject: Re: Hello\n\nReal reply body");
+  copyResult();
+  assert.equal(clipboardText, "Subject: Re: Hello\n\nReal reply body");
+});
+
+test("copyResult copies visible TL;DR text for a non-reply result", async () => {
+  clipboardText = null;
+  stampResultType("summarize");
+  document.getElementById("full-content-container").style.display = "none";
+  document.getElementById("tldr-content").innerText = "Subject: quoted line in a summary\nDetail";
+  copyResult();
+  // Give the .then() callback a tick to run.
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(
+    clipboardText,
+    "Subject: quoted line in a summary\nDetail",
+    "summary is NOT misread as a reply"
+  );
+});
+
+test("copyReply reads the structured reply raw; falls back when absent", async () => {
+  clipboardText = null;
+  stampResultType("reply", "Subject: Hi\n\nBody");
+  copyReply();
+  await new Promise((r) => setTimeout(r, 0));
+  assert.equal(clipboardText, "Subject: Hi\n\nBody");
+});
+
+test("formatReplyOutput: single-line reply yields an empty body (no marker echo)", () => {
+  const out = formatReplyOutput("Subject: Hi");
+  assert.equal(out.subject, "Hi");
+  assert.equal(out.body, "");
+});
+
+test("formatReplyOutput: empty reply falls back to a placeholder subject", () => {
+  const out = formatReplyOutput("   ");
+  assert.equal(out.subject, "Re: Your email");
+  assert.equal(out.body, "");
 });

@@ -6,6 +6,7 @@
 
 import { fetchAvailableModels, generateText } from "../shared/zai.js";
 import { DEFAULT_SETTINGS } from "./prompt-templates.js";
+import { fillTemplate } from "./prompts.js";
 import { getSettings } from "./storage.js";
 
 export { fetchAvailableModels };
@@ -78,10 +79,14 @@ export async function generateTldrContent({
   modelOverride = null,
   signal = null,
 }) {
-  const tldrPrompt = requireTemplate("tldrPrompt", "TL;DR")
-    .replace("{subject}", subject)
-    .replace("{content}", emailContent)
-    .replace("{language}", language);
+  // Route through fillTemplate (not raw .replace): a `.replace` chain interprets
+  // `$&`/`$$`/``$` ``/`$'` in the email body as backreferences and corrupts the
+  // prompt. fillTemplate uses a function callback so `$` in values is literal.
+  const tldrPrompt = fillTemplate(requireTemplate("tldrPrompt", "TL;DR"), {
+    subject,
+    content: emailContent,
+    language,
+  });
 
   return generateContent(tldrPrompt, apiKey, modelOverride, true, signal);
 }

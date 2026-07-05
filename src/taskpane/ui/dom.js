@@ -16,6 +16,38 @@ export const TYPES = Object.freeze({
   REPLY: 3,
 });
 
+// Result-type stamping on #result-section. copyResult/copyReply read these
+// attrs instead of inferring "is this a reply?" from whether the rendered text
+// happens to contain "Subject:" — that heuristic false-positive'd on any
+// summary of an email that quoted a Subject line, mangling the clipboard.
+const RESULT_TYPE_ATTR = "data-result-type";
+const REPLY_RAW_ATTR = "data-reply-raw";
+const TYPE_NAMES = Object.freeze({
+  [TYPES.SUMMARIZE]: "summarize",
+  [TYPES.TRANSLATE]: "translate",
+  [TYPES.TRANSLATE_SUMMARIZE]: "translateSummarize",
+  [TYPES.REPLY]: "reply",
+});
+
+/**
+ * Stamp the result container with the kind of result currently rendered (and,
+ * for replies, the pre-formatted Subject+body text). Every render path —
+ * showResults, the reply flow, and the calendar flow — calls this so copy
+ * never reads a stale type from a prior result.
+ */
+export function stampResultType(typeName, replyRaw = null) {
+  const section = $("result-section");
+  if (!section) {
+    return;
+  }
+  section.setAttribute(RESULT_TYPE_ATTR, typeName || "generic");
+  if (replyRaw != null) {
+    section.setAttribute(REPLY_RAW_ATTR, replyRaw);
+  } else {
+    section.removeAttribute(REPLY_RAW_ATTR);
+  }
+}
+
 /**
  * Read the configured Z.AI API key: the settings-panel input first (so an unsaved
  * typed key works), then saved Outlook add-in settings. Lives in the DOM layer
@@ -56,9 +88,30 @@ export function escapeHtml(value) {
  *
  * marked + DOMPurify are bundled (not CDN), so both are always available — no
  * fail-open path exists. This is the single trust boundary for rich rendering.
+ *
+ * Hardening beyond the default config:
+ * - ALLOWED_URI_REGEXP restricts href/src to http(s)/mailto/tel/anchor/relative
+ *   so a `javascript:` or `data:` URL cannot execute even if a future DOMPurify
+ *   regression let an <a> through. CSP is the primary defense; this is the
+ *   sanitizer-level backstop.
+ * - afterSanitizeAttributes forces every surviving link to open in a new tab
+ *   with rel=noopener noreferrer (no reverse tabnab via window.opener).
  */
+const SAFE_URI_REGEXP = /^(?:(?:https?|mailto|tel):|#|\/)/i;
+const PURIFY_CONFIG = Object.freeze({
+  ALLOWED_URI_REGEXP: SAFE_URI_REGEXP,
+  ADD_ATTR: ["target", "rel"],
+});
+
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node && node.tagName === "A" && node.getAttribute("href")) {
+    node.setAttribute("target", "_blank");
+    node.setAttribute("rel", "noopener noreferrer");
+  }
+});
+
 export function renderMarkdown(content) {
-  return DOMPurify.sanitize(marked.parse(content || ""));
+  return DOMPurify.sanitize(marked.parse(content || ""), PURIFY_CONFIG);
 }
 
 /** Shorthand getElementById. Returns the element or null. */
@@ -79,7 +132,16 @@ export function setText(id, message) {
  * @param {string} message
  * @param {"info"|"success"|"warning"|"error"} [type]
  */
+// Tracks the TTL timer of the currently-visible toast so a rapid follow-up
+// notification clears it before replacing the node (otherwise the prior
+// dismiss closure lingers until the old TTL fires).
+let pendingNotificationTimer = 0;
+
 export function showNotification(message, type = "info") {
+  // Cancel any in-flight dismiss from the prior toast so its closure cannot
+  // fire on (or outlive) the replacement node.
+  clearTimeout(pendingNotificationTimer);
+
   const existing = $("notification");
   if (existing) {
     existing.remove();
@@ -121,6 +183,7 @@ export function showNotification(message, type = "info") {
 
   const ttl = type === "error" || type === "warning" ? 6000 : 4000;
   closeTimer = setTimeout(dismiss, ttl);
+  pendingNotificationTimer = closeTimer;
 }
 
 /** Show the loading section and hide landing/result sections. */
@@ -280,6 +343,8 @@ export function showResults(content, type) {
     appBody.style.display = "block";
   }
 
+  stampResultType(TYPE_NAMES[type] || "generic");
+
   const tldrMode = getTldrModeSetting();
 
   if (tldrContent) {
@@ -351,43 +416,24 @@ export function showResults(content, type) {
   }
 }
 
-/** Copy the visible result to the clipboard, formatting replies correctly. */
+/** Copy the visible result to the clipboard. Reply results use the structured
+ *  Subject+body captured at render time; everything else copies visible text. */
 export function copyResult() {
+  const section = $("result-section");
+  const typeName = section ? section.getAttribute(RESULT_TYPE_ATTR) : "";
+
   let resultContent = "";
-
-  const tldrContent = $("tldr-content");
-  const fullContent = $("result-content");
-  const tldrText = tldrContent ? tldrContent.innerText : "";
-  const fullText = fullContent ? fullContent.innerText : "";
-
-  const isReply = tldrText.includes("Subject:") || fullText.includes("Subject:");
-
-  if (isReply) {
-    let subject = "";
-    let body = "";
-
-    const headingMatch = /^(?:Subject:\s*)?(.+?)(?:\n|$)/i.exec(tldrText);
-    if (headingMatch) {
-      subject = headingMatch[1].trim();
-    }
-
-    const fullContainer = $("full-content-container");
-    if (fullContainer && fullContainer.style.display !== "none") {
-      body = fullText;
-    } else if (headingMatch) {
-      const lines = tldrText.split("\n");
-      body = lines.slice(1).join("\n").trim();
-    } else {
-      body = tldrText;
-    }
-
-    resultContent = `Subject: ${subject}\n\n${body}`;
+  if (typeName === "reply") {
+    resultContent = (section && section.getAttribute(REPLY_RAW_ATTR)) || "";
   } else {
+    // Prefer the expanded full content over the TL;DR when it is visible.
     const fullContainer = $("full-content-container");
-    if (fullContainer && fullContainer.style.display !== "none") {
+    const fullText = $("result-content") ? $("result-content").innerText : "";
+    if (fullContainer && fullContainer.style.display !== "none" && fullText) {
       resultContent = fullText;
     } else {
-      resultContent = tldrText;
+      const tldrContent = $("tldr-content");
+      resultContent = tldrContent ? tldrContent.innerText : "";
     }
   }
 
@@ -405,16 +451,11 @@ export function copyResult() {
 
 /** Copy the formatted reply (Subject + body) to the clipboard. */
 export function copyReply() {
-  const tldrContent = $("tldr-content");
-  const tldrText = tldrContent ? tldrContent.innerText : "";
-
-  const subjectMatch = tldrText.match(/Subject:\s*(.+?)(?:\n|$)/i);
-  const subject = subjectMatch ? subjectMatch[1].trim() : "";
-
-  const bodyStart = tldrText.indexOf(subject) + subject.length;
-  const body = tldrText.substring(bodyStart).trim();
-
-  const replyContent = `Subject: ${subject}\n\n${body}`;
+  const section = $("result-section");
+  const replyRaw = section ? section.getAttribute(REPLY_RAW_ATTR) : null;
+  // Prefer the structured Subject + body captured at render time; fall back to
+  // a tolerant DOM parse only if the stamp is missing (an older render).
+  const replyContent = replyRaw != null ? replyRaw : parseReplyFromDom();
 
   navigator.clipboard
     .writeText(replyContent)
@@ -428,6 +469,22 @@ export function copyReply() {
     });
 }
 
+/** Tolerant fallback: reconstruct Subject + body from the rendered reply text. */
+function parseReplyFromDom() {
+  const tldrContent = $("tldr-content");
+  const tldrText = tldrContent ? tldrContent.innerText : "";
+
+  const subjectMatch = tldrText.match(/Subject:\s*(.+?)(?:\n|$)/i);
+  // Skip past the entire matched "Subject: ..." line (match.index + full match
+  // length), not indexOf(subject) — that bug returned 0 when subject was empty
+  // and leaked the "Subject:" marker into the body.
+  const bodyStart = subjectMatch ? subjectMatch.index + subjectMatch[0].length : 0;
+  const subject = subjectMatch ? subjectMatch[1].trim() : "";
+  const body = tldrText.substring(bodyStart).trim();
+
+  return `Subject: ${subject}\n\n${body}`;
+}
+
 /**
  * Parse a raw reply into structured { subject, body, html, raw }.
  * Looks for an explicit SUBJECT: marker, else treats the first line as subject.
@@ -439,15 +496,22 @@ export function formatReplyOutput(replyText) {
   const subjectMatch = replyText.match(/^(?:SUBJECT:|Subject:)\s*(.+?)(?:\n|$)/m);
   if (subjectMatch) {
     subject = subjectMatch[1].trim();
-    body = replyText.replace(/^(?:SUBJECT:|Subject:)\s*.+?\n+/m, "").trim();
+    // Drop the SUBJECT: marker line. [^\n]* consumes the rest of the subject
+    // line WITHOUT requiring a trailing newline, so a single-line reply
+    // ("Subject: Hi") yields an empty body instead of echoing the marker back
+    // (the old `.+?\n+` regex needed a newline and left the line intact).
+    body = replyText.replace(/^(?:SUBJECT:|Subject:)\s*[^\n]*\n?/m, "").trim();
   } else {
-    const lines = replyText.trim().split("\n");
-    if (lines.length > 0) {
+    const trimmed = replyText.trim();
+    if (!trimmed) {
+      // Empty reply — reachable now (the prior split("\n") always returned ≥1
+      // element, so this branch was dead and an empty reply rendered as "").
+      subject = "Re: Your email";
+      body = "";
+    } else {
+      const lines = trimmed.split("\n");
       subject = lines[0].trim();
       body = lines.slice(1).join("\n").trim();
-    } else {
-      subject = "Re: Your email";
-      body = replyText.trim();
     }
   }
 

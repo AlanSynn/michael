@@ -10,8 +10,16 @@ import { getLanguageText } from "../language.js";
 import { fillTemplate } from "../prompts.js";
 import { getSettings } from "../storage.js";
 import { DEFAULT_SETTINGS } from "../prompt-templates.js";
-import { showLoading, hideLoading, showNotification, escapeHtml, getApiKey } from "./dom.js";
+import {
+  showLoading,
+  hideLoading,
+  showNotification,
+  escapeHtml,
+  getApiKey,
+  stampResultType,
+} from "./dom.js";
 import { toggleSettingsView, getMissingApiKeyMessage } from "./settings-view.js";
+import { beginFlow, isActiveFlow, isCancelError } from "./flow-control.js";
 
 function getEventTitleLanguage() {
   const settings = getSettings();
@@ -41,8 +49,26 @@ function buildTitleLanguageInstructions(titleLanguage) {
       If the event has a type or category, include it in square brackets ([]) at the beginning, then if there's a presenter and topic, write the presenter's name first, followed by a hyphen (-) and then the topic.`;
 }
 
+/**
+ * Accept the date/time strings Z.AI actually emits. Models frequently return
+ * ISO 8601 with a trailing "Z", a "+09:00" offset, or fractional seconds
+ * (".000"). The prior strict regex required a bare YYYY-MM-DDTHH:mm:ss and
+ * rejected all of those, so valid extractions surfaced as "extraction failed".
+ * Validate with `new Date(...)` so the downstream displayNewAppointmentForm
+ * gets a real timestamp either way.
+ */
+function isValidDateTime(value) {
+  if (typeof value !== "string" || !value) {
+    return false;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/.test(value)) {
+    return false;
+  }
+  return !isNaN(new Date(value).getTime());
+}
+
 /** Parse event details (JSON) from email content using Z.AI. */
-async function parseEventDetailsWithZai(emailContent) {
+async function parseEventDetailsWithZai(emailContent, signal = null) {
   try {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -57,7 +83,7 @@ async function parseEventDetailsWithZai(emailContent) {
       content: emailContent,
     });
 
-    const result = await generateContent(prompt, apiKey, null, false);
+    const result = await generateContent(prompt, apiKey, null, false, signal);
 
     // Extract only the JSON object from the response.
     let jsonText = result;
@@ -79,12 +105,11 @@ async function parseEventDetailsWithZai(emailContent) {
         throw new Error("Event end time not found.");
       }
 
-      const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
-      if (!dateRegex.test(eventDetails.start.dateTime)) {
-        throw new Error("Invalid start time format. (Should be YYYY-MM-DDTHH:mm:ss format)");
+      if (!isValidDateTime(eventDetails.start.dateTime)) {
+        throw new Error("Invalid start time format. (Expected YYYY-MM-DDTHH:mm:ss)");
       }
-      if (!dateRegex.test(eventDetails.end.dateTime)) {
-        throw new Error("Invalid end time format. (Should be YYYY-MM-DDTHH:mm:ss format)");
+      if (!isValidDateTime(eventDetails.end.dateTime)) {
+        throw new Error("Invalid end time format. (Expected YYYY-MM-DDTHH:mm:ss)");
       }
 
       return eventDetails;
@@ -174,10 +199,15 @@ export async function handleCalendarEvent() {
     return;
   }
 
+  // Join the shared single-flight controller so starting an email flow (or
+  // vice-versa) cancels an in-flight calendar parse and they cannot race on
+  // the result-section DOM.
+  const signal = beginFlow();
   showLoading("Creating calendar event...");
 
   try {
     const emailContent = await getEmailContent();
+    if (!isActiveFlow(signal)) return;
 
     const landingScreen = document.getElementById("landing-screen");
     const resultSection = document.getElementById("result-section");
@@ -186,6 +216,14 @@ export async function handleCalendarEvent() {
     }
     if (resultSection) {
       resultSection.style.display = "block";
+    }
+    // Calendar output is neither a reply nor a copyable "result" — stamp the
+    // type so copyResult/copyReply do not read a stale "reply" stamp from a
+    // prior run, and hide the reply-only copy button.
+    stampResultType("calendar");
+    const copyReplyBtn = document.getElementById("copy-reply");
+    if (copyReplyBtn) {
+      copyReplyBtn.style.display = "none";
     }
 
     const tldrContent = document.getElementById("tldr-content");
@@ -217,7 +255,8 @@ export async function handleCalendarEvent() {
     }
 
     try {
-      const eventDetails = await parseEventDetailsWithZai(emailContent);
+      const eventDetails = await parseEventDetailsWithZai(emailContent, signal);
+      if (!isActiveFlow(signal)) return;
 
       const resultContent = document.getElementById("result-content");
       if (resultContent) {
@@ -236,8 +275,18 @@ export async function handleCalendarEvent() {
 
       await createCalendarEvent(eventDetails);
     } catch (extractionError) {
+      // A superseded parse surfaces an AbortError — do NOT render "extraction
+      // failed" for a cancel the user initiated by starting another flow. The
+      // isActiveFlow check also covers a late non-Abort rejection from a
+      // cancelled parse (e.g. body.getAsync rejecting after the item changed).
+      if (isCancelError(extractionError) || !isActiveFlow(signal)) {
+        return;
+      }
       console.error("Event extraction error:", extractionError);
-      const errorMessage = extractionError.message;
+      const errorMessage =
+        extractionError && extractionError.message
+          ? extractionError.message
+          : String(extractionError);
       const cleanedMessage = errorMessage.includes("Failed to extract event information:")
         ? errorMessage.split("Failed to extract event information:")[1].trim()
         : errorMessage;
@@ -257,22 +306,31 @@ export async function handleCalendarEvent() {
       showNotification(`Event extraction failed: ${cleanedMessage}`, "error");
     }
   } catch (error) {
+    if (isCancelError(error) || !isActiveFlow(signal)) {
+      return;
+    }
     console.error("Calendar event handling error:", error);
-    showNotification(`Error: ${error.message}`, "error");
+    const message = error && error.message ? error.message : String(error);
+    showNotification(`Error: ${message}`, "error");
   } finally {
-    hideLoading();
-    updateCalendarButtonState();
+    // Only the active flow owns the loading spinner + expand button. A
+    // superseded calendar parse must not reset them and clobber the newer
+    // flow's UI.
+    if (isActiveFlow(signal)) {
+      hideLoading();
+      updateCalendarButtonState();
 
-    const expandButton = document.getElementById("expand-content");
-    if (expandButton) {
-      expandButton.disabled = false;
-      expandButton.classList.remove("ms-Button--disabled");
-      expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
-      expandButton.classList.add("ms-Button--primary");
+      const expandButton = document.getElementById("expand-content");
+      if (expandButton) {
+        expandButton.disabled = false;
+        expandButton.classList.remove("ms-Button--disabled");
+        expandButton.innerHTML = '<span class="ms-Button-label">Show Full Content</span>';
+        expandButton.classList.add("ms-Button--primary");
 
-      const fullContentContainer = document.getElementById("full-content-container");
-      if (fullContentContainer) {
-        fullContentContainer.style.display = "block";
+        const fullContentContainer = document.getElementById("full-content-container");
+        if (fullContentContainer) {
+          fullContentContainer.style.display = "block";
+        }
       }
     }
   }

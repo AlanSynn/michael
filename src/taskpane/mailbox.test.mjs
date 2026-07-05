@@ -14,7 +14,7 @@ function setOffice(item) {
   };
 }
 
-const { hasSelectedItem, getEmailContent } = await import("./mailbox.js");
+const { hasSelectedItem, getEmailContent, clearEmailContentCache } = await import("./mailbox.js");
 
 test("hasSelectedItem: true when item exposes body.getAsync", () => {
   setOffice({ body: { getAsync() {} } });
@@ -63,4 +63,58 @@ test("getEmailContent: rejects when getAsync reports failure", async () => {
     },
   });
   await assert.rejects(getEmailContent(), /Failed to get email content/);
+});
+
+test("getEmailContent: collapses concurrent calls for the same itemId into one getAsync", async () => {
+  clearEmailContentCache();
+  let getAsyncCalls = 0;
+  setOffice({
+    itemId: "item-A",
+    body: {
+      getAsync(_coercion, cb) {
+        getAsyncCalls += 1;
+        // Resolve asynchronously so the second concurrent caller observes the
+        // in-flight promise (the documented autorun+probe collision case).
+        setTimeout(() => cb({ status: "succeeded", value: "shared body" }), 0);
+      },
+    },
+  });
+  const [a, b] = await Promise.all([getEmailContent(), getEmailContent()]);
+  assert.equal(a, "shared body");
+  assert.equal(b, "shared body");
+  assert.equal(getAsyncCalls, 1, "concurrent calls share one host round-trip");
+});
+
+test("getEmailContent: sequential calls on the same itemId hit the cache", async () => {
+  clearEmailContentCache();
+  let getAsyncCalls = 0;
+  setOffice({
+    itemId: "item-B",
+    body: {
+      getAsync(_coercion, cb) {
+        getAsyncCalls += 1;
+        cb({ status: "succeeded", value: "cached body" });
+      },
+    },
+  });
+  await getEmailContent();
+  await getEmailContent();
+  assert.equal(getAsyncCalls, 1, "second call served from cache");
+});
+
+test("getEmailContent: a failed fetch is dropped from the cache (retries next call)", async () => {
+  clearEmailContentCache();
+  let getAsyncCalls = 0;
+  setOffice({
+    itemId: "item-C",
+    body: {
+      getAsync(_coercion, cb) {
+        getAsyncCalls += 1;
+        cb({ status: "failed", error: { message: "transient" } });
+      },
+    },
+  });
+  await assert.rejects(getEmailContent(), /Failed to get email content/);
+  await assert.rejects(getEmailContent(), /Failed to get email content/);
+  assert.equal(getAsyncCalls, 2, "rejected promise evicted so the call retries");
 });

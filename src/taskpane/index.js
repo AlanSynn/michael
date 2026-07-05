@@ -1,11 +1,15 @@
-/* global document, Office, console, window */
+/* global document, Office, console, window, setTimeout, clearTimeout */
 
 // Taskpane entry point. Owns Office.onReady + DOM listener wiring + the single
 // flat ItemChanged handler. (Earlier builds nested addHandlerAsync/register
 // chains that were dead; they were collapsed into one flat registration.)
 
 import { migrateSettingsKeys } from "./storage.js";
-import { onItemChanged, onSettingsChanged as registerSettingsChanged } from "./mailbox.js";
+import {
+  onItemChanged,
+  onSettingsChanged as registerSettingsChanged,
+  clearEmailContentCache,
+} from "./mailbox.js";
 import {
   loadDropdownSettings,
   updateAuthenticationStatus,
@@ -42,8 +46,14 @@ function on(id, eventName, handler) {
   }
 }
 
-/** Wire every button/input listener used by the taskpane. */
+/** Wire every button/input listener used by the taskpane. Idempotent: a
+ *  bootstrap retry (e.g. both Office.initialize and Office.onReady firing)
+ *  must not double-register handlers. */
+let listenersWired = false;
 function wireListeners() {
+  if (listenersWired) return;
+  listenersWired = true;
+
   on("summarize", "click", summarizeEmail);
   on("translate", "click", translateEmail);
   on("translate-summarize", "click", translateAndSummarizeEmail);
@@ -62,7 +72,16 @@ function wireListeners() {
   on("dropdown-copy-templates", "click", copyAllTemplatesToClipboard);
   on("dropdown-export-markdown", "click", exportTemplatesAsMarkdown);
   on("dropdown-refresh-models", "click", () => refreshModelCatalog({ force: true }));
-  on("dropdown-api-key", "input", updateAuthenticationStatus);
+
+  // Auth status updates per keystroke; a debounced live model refresh after
+  // the user settles on a key invalidates the cached catalog (which was served
+  // from the prior/empty key) so the dropdowns reflect the new credentials.
+  let keyRefreshTimer = 0;
+  on("dropdown-api-key", "input", () => {
+    updateAuthenticationStatus();
+    clearTimeout(keyRefreshTimer);
+    keyRefreshTimer = setTimeout(() => refreshModelCatalog({ force: true, silent: true }), 600);
+  });
 
   // Dev-mode toggle reveals the dev-server field group.
   on("dropdown-dev-mode", "change", (event) => {
@@ -96,9 +115,11 @@ function bootstrapOutlook() {
   // Re-apply the theme when Office settings change (only when following Office).
   registerSettingsChanged(onSettingsChanged);
 
-  // ONE flat ItemChanged handler: autorun the configured action and refresh
-  // the calendar-button state for the newly selected item.
+  // ONE flat ItemChanged handler: clear the per-item body cache, autorun the
+  // configured action, and refresh the calendar-button state for the newly
+  // selected item.
   onItemChanged(() => {
+    clearEmailContentCache();
     runAutorun();
     updateCalendarButtonState();
   });
@@ -149,32 +170,39 @@ if (typeof Office !== "undefined") {
   Office.initialize = () => runBootstrap("initialize");
 }
 
-Office.onReady((info) => {
-  const expectedHost = Office.HostType && Office.HostType.Outlook;
-  console.info("[Michael] Office.onReady fired:", {
-    host: info && info.host,
-    platform: info && info.platform,
-    expectedOutlookHost: expectedHost,
-  });
-  if (info && expectedHost !== undefined && info.host === expectedHost) {
-    runBootstrap("Office.onReady");
-  } else {
-    const detectedHost = info && info.host ? info.host : "unknown";
-    console.warn(
-      "[Michael] Office.onReady fired but host is not Outlook (detected: " +
-        detectedHost +
-        ") — staying on the sideload screen."
-    );
-    // Surface an actionable message instead of the generic sideload logo so a
-    // misconfigured launch (e.g. opened in a plain browser tab) is not a dead end.
-    const msg = document.getElementById("sideload-msg");
-    if (msg) {
-      msg.textContent =
-        "Michael can only run inside Outlook. Close this pane and reopen it from Outlook" +
-        (detectedHost !== "unknown" ? " (detected host: " + detectedHost + ")." : ".");
+// Guard onReady: if office.js loaded only partially (e.g. a blocked dependency
+// left Office defined but Office.onReady missing), calling it would throw and
+// leave the pane dead. Fall back to the Office.initialize path above.
+if (typeof Office !== "undefined" && typeof Office.onReady === "function") {
+  Office.onReady((info) => {
+    const expectedHost = Office.HostType && Office.HostType.Outlook;
+    console.info("[Michael] Office.onReady fired:", {
+      host: info && info.host,
+      platform: info && info.platform,
+      expectedOutlookHost: expectedHost,
+    });
+    if (info && expectedHost !== undefined && info.host === expectedHost) {
+      runBootstrap("Office.onReady");
+    } else {
+      const detectedHost = info && info.host ? info.host : "unknown";
+      console.warn(
+        "[Michael] Office.onReady fired but host is not Outlook (detected: " +
+          detectedHost +
+          ") — staying on the sideload screen."
+      );
+      // Surface an actionable message instead of the generic sideload logo so a
+      // misconfigured launch (e.g. opened in a plain browser tab) is not a dead end.
+      const msg = document.getElementById("sideload-msg");
+      if (msg) {
+        msg.textContent =
+          "Michael can only run inside Outlook. Close this pane and reopen it from Outlook" +
+          (detectedHost !== "unknown" ? " (detected host: " + detectedHost + ")." : ".");
+      }
     }
-  }
-});
+  });
+} else {
+  console.warn("[Michael] Office.onReady unavailable — relying on the Office.initialize fallback.");
+}
 
 // Surface any uncaught error or rejected promise so a dead pane always leaves
 // a trace in the Web Inspector console.
