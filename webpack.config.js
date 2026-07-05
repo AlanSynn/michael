@@ -94,30 +94,19 @@ module.exports = async (env, options) => {
                 return content;
               } else {
                 const contentStr = content.toString();
-                console.log("Original content:", contentStr);
-                console.log("Replacing:", {
-                  addinDevName,
-                  addinName,
-                  urlDev,
-                  urlProd,
-                });
-
                 const escapedAddinDevName = addinDevName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
                 const escapedUrlDev = urlDev.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-                const replaced = contentStr
+                // Rewrite dev URLs to the production origin and drop the dev-only
+                // localhost AppDomain entry (the alansynn.com AppDomain already covers prod).
+                return contentStr
                   .replace(new RegExp(escapedAddinDevName, "g"), addinName)
-                  .replace(new RegExp(escapedUrlDev, "g"), urlProd);
-
-                console.log("Replaced content:", replaced);
-                return replaced;
+                  .replace(new RegExp(escapedUrlDev, "g"), urlProd)
+                  .replace(/[ \t]*<AppDomain>https:\/\/localhost:3000<\/AppDomain>[ \t]*\n/g, "");
               }
             },
           },
         ],
-      }),
-      new webpack.DefinePlugin({
-        __ZAI_API_KEY__: JSON.stringify(process.env.ZAI_API_KEY || ""),
       }),
     ],
     devServer: {

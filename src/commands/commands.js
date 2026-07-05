@@ -42,7 +42,7 @@ async function action(event) {
   const template = getSavedCommandTranslateTemplate(settings);
   const targetLanguage = getLanguageText(settings.defaultLanguage);
 
-  showProcessingNotification(`Translating email body to ${targetLanguage}...`, event);
+  showProcessingNotification(`Translating email body to ${targetLanguage}...`);
 
   try {
     const emailContent = await getEmailContent();
