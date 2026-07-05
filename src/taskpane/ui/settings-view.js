@@ -32,7 +32,6 @@ import {
   setCatalog,
   getCachedModelCatalog as resolveCachedCatalog,
 } from "../model-catalog.js";
-import { getApiKey } from "../generation.js";
 import {
   getAssetPath,
   applyFontSize,
@@ -40,6 +39,7 @@ import {
   updateDevBadges,
   showNotification,
   setText,
+  getApiKey,
   $,
 } from "./dom.js";
 

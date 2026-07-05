@@ -14,8 +14,21 @@ export const TYPES = Object.freeze({
   TRANSLATE: 1,
   TRANSLATE_SUMMARIZE: 2,
   REPLY: 3,
-  CALENDAR: 4,
 });
+
+/**
+ * Read the configured Z.AI API key: the settings-panel input first (so an unsaved
+ * typed key works), then saved Outlook add-in settings. Lives in the DOM layer
+ * because it reads an input element; generation.js stays DOM-free.
+ */
+export function getApiKey() {
+  const input = document.getElementById("dropdown-api-key");
+  if (input && typeof input.value === "string" && input.value.trim()) {
+    return input.value.trim();
+  }
+  const settings = getSettings();
+  return typeof settings.apiKey === "string" ? settings.apiKey.trim() : "";
+}
 
 /** Resolve a packaged asset URL under ./assets (rewritten by webpack/html-loader). */
 export function getAssetPath(fileName) {

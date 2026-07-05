@@ -1,7 +1,8 @@
-/* global console, document */
+/* global console */
 
 // Z.AI orchestration over the shared zai.js client + storage + mailbox.
-// Pure generation logic; UI status updates stay in the settings-view/UI layer.
+// Pure generation logic — no DOM. UI status updates (loading spinners, API-key
+// field reads) stay in the UI layer (dom.js / flows.js / settings-view.js).
 
 import { fetchAvailableModels, generateText } from "../shared/zai.js";
 import { DEFAULT_SETTINGS } from "./prompt-templates.js";
@@ -18,8 +19,8 @@ const FULL_MAX_TOKENS = 8192;
 const DEFAULT_TEMPERATURE = 0.4;
 
 /**
- * Generate text via Z.AI. Hides the loading spinner on completion for non-TL;DR
- * requests (preserves prior behavior; UI coupling to be lifted in a later pass).
+ * Generate text via Z.AI. Callers own the loading-spinner lifecycle (flows.js
+ * and calendar.js already hide it in their own finally blocks).
  */
 export async function generateContent(prompt, apiKey, modelOverride = null, isTldr = false) {
   let model = "";
@@ -45,13 +46,6 @@ export async function generateContent(prompt, apiKey, modelOverride = null, isTl
   } catch (error) {
     console.error("Error generating content:", error);
     throw error;
-  } finally {
-    if (!isTldr) {
-      const loading = document.getElementById("loading");
-      if (loading) {
-        loading.style.display = "none";
-      }
-    }
   }
 }
 
@@ -70,17 +64,6 @@ export async function generateTldrContent(
     .replace("{language}", language);
 
   return generateContent(tldrPrompt, apiKey, modelOverride, true);
-}
-
-/** Read the configured Z.AI API key (input field first, then saved settings). */
-export function getApiKey() {
-  const input = document.getElementById("dropdown-api-key");
-  if (input && typeof input.value === "string" && input.value.trim()) {
-    return input.value.trim();
-  }
-
-  const settings = getSettings();
-  return typeof settings.apiKey === "string" ? settings.apiKey.trim() : "";
 }
 
 export function getLanguage() {

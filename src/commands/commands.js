@@ -1,20 +1,16 @@
-/*
- * Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT license.
- * See LICENSE in the project root for license information.
- */
-
 /* global Office, console */
 
-// Function-file for the "Quick Translate" ribbon command. Now imports the same
-// shared Z.AI client, language map, and prompt builder as the taskpane, so there
-// is a single provider implementation (the prior CJS zaiClient/zaiConfig were
-// ~40% duplicated).
+// Function-file for the "Quick Translate" ribbon command. Imports the same
+// shared Z.AI client, language map, prompt builder, storage, and mailbox
+// facades as the taskpane, so there is a single implementation of each (the
+// prior CJS zaiClient/zaiConfig and inline mailbox/settings readers were
+// duplicated across the taskpane and function-file).
 import { generateText, getDefaultZaiModel } from "../shared/zai.js";
 import { getLanguageText } from "../taskpane/language.js";
 import { fillTemplate } from "../taskpane/prompts.js";
 import { DEFAULT_PROMPT_TEMPLATES } from "../taskpane/prompt-templates.js";
-
-const SETTINGS_KEY = "michael_settings";
+import { getSettings } from "../taskpane/storage.js";
+import { getEmailContent, replaceSelectionWithText } from "../taskpane/mailbox.js";
 
 Office.onReady(() => {
   // Office is ready.
@@ -26,7 +22,7 @@ Office.onReady(() => {
  * @param {Office.AddinCommands.Event} event
  */
 async function action(event) {
-  const settings = getSavedSettings();
+  const settings = getSettings();
   const apiKey = getSavedApiKey(settings);
   if (!apiKey) {
     showErrorNotification("Open Michael Settings and save a Z.AI API key first.", event);
@@ -63,53 +59,7 @@ async function action(event) {
 
 Office.actions.associate("action", action);
 
-// --- mailbox helpers (function-file context) --------------------------------
-
-function replaceSelectionWithText(textToInsert) {
-  return new Promise((resolve, reject) => {
-    Office.context.mailbox.item.body.setSelectedDataAsync(
-      textToInsert,
-      { coercionType: Office.CoercionType.Text },
-      (asyncResult) => {
-        if (asyncResult.status === Office.AsyncResultStatus.Failed) {
-          console.error("Failed to set selected data:", asyncResult.error);
-          reject(new Error(`Failed to insert/replace text: ${asyncResult.error.message}`));
-          return;
-        }
-        resolve();
-      }
-    );
-  });
-}
-
-function getEmailContent() {
-  return new Promise((resolve, reject) => {
-    Office.context.mailbox.item.body.getAsync(Office.CoercionType.Text, (result) => {
-      if (result.status === Office.AsyncResultStatus.Succeeded) {
-        resolve(result.value.trim());
-        return;
-      }
-      console.error("Failed to get email body as text:", result.error);
-      reject(new Error("Failed to get email content."));
-    });
-  });
-}
-
 // --- saved-settings readers -------------------------------------------------
-
-function getSavedSettings() {
-  try {
-    const rawValue = Office.context?.roamingSettings?.get(SETTINGS_KEY);
-    if (!rawValue || typeof rawValue !== "string") {
-      return {};
-    }
-    const parsed = JSON.parse(rawValue);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch (error) {
-    console.error("Failed to read saved Outlook settings:", error);
-    return {};
-  }
-}
 
 function getSavedApiKey(settings) {
   return typeof settings?.apiKey === "string" ? settings.apiKey.trim() : "";

@@ -3,13 +3,13 @@
 // Calendar feature: detect whether an email describes an event, parse the
 // event details via Z.AI, and open a prefilled Outlook appointment form.
 
-import { generateContent, getApiKey, requireTemplate } from "../generation.js";
+import { generateContent, requireTemplate } from "../generation.js";
 import { getEmailContent } from "../mailbox.js";
 import { getLanguageText } from "../language.js";
 import { fillTemplate } from "../prompts.js";
 import { getSettings } from "../storage.js";
 import { DEFAULT_SETTINGS } from "../prompt-templates.js";
-import { showLoading, hideLoading, showNotification, escapeHtml } from "./dom.js";
+import { showLoading, hideLoading, showNotification, escapeHtml, getApiKey } from "./dom.js";
 import { toggleSettingsView, getMissingApiKeyMessage } from "./settings-view.js";
 
 function getEventTitleLanguage() {

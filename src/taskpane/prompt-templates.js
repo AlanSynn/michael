@@ -1,18 +1,7 @@
 /**
- * Z.AI GLM Coding Plan defaults for Michael taskpane integration.
- * Import these constants from taskpane.js when the provider migration is wired.
- */
-
-/**
- * @typedef {Object} ZaiProviderConfig
- * @property {string} providerName
- * @property {string} planName
- * @property {string} apiKeyEnvVar
- * @property {string} codingBaseUrl
- * @property {string} generalBaseUrl
- * @property {string} defaultModel
- * @property {string} replyModel
- * @property {readonly string[]} modelSuggestions
+ * Z.AI GLM Coding Plan prompt-template factories + defaults for the Michael
+ * add-in. Provider wiring lives in shared/zai.js; the model catalog cache in
+ * model-catalog.js. Consumed by generation.js, commands.js, and settings-view.js.
  */
 
 /**
@@ -54,18 +43,6 @@ export const TEMPLATE_KEYS = Object.freeze([
   "calendarParse",
   "calendarCheck",
 ]);
-
-/** @type {ZaiProviderConfig} */
-export const ZAI_PROVIDER_CONFIG = Object.freeze({
-  providerName: "Z.AI",
-  planName: "GLM Coding Plan",
-  apiKeyEnvVar: "ZAI_API_KEY",
-  codingBaseUrl: "https://api.z.ai/api/coding/paas/v4",
-  generalBaseUrl: "https://api.z.ai/api/paas/v4",
-  defaultModel: "glm-4.5-air",
-  replyModel: "glm-4.5-air",
-  modelSuggestions: Object.freeze(["glm-4.5-air", "glm-4.5-flash", "glm-4.7"]),
-});
 
 export const PROVIDER_MESSAGES = Object.freeze({
   apiKeyLabel: "Z.AI API Key",

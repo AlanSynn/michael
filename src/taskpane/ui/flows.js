@@ -7,7 +7,6 @@
 import {
   generateContent,
   generateTldrContent,
-  getApiKey,
   getLanguage,
   requireTemplate,
   requireModel,
@@ -28,6 +27,7 @@ import {
   formatReplyOutput,
   copyReply,
   getTldrModeSetting,
+  getApiKey,
 } from "./dom.js";
 import { toggleSettingsView, getMissingApiKeyMessage } from "./settings-view.js";
 
