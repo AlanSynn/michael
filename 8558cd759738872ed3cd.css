@@ -1,6 +1,41 @@
 /* Copyright (c) Alan Synn. All rights reserved. Licensed under the MIT License. */
 /* Taskpane styles for the Michael add-in. */
 
+/* Self-hosted Inter (woff2 copied to dist/fonts/ by CopyWebpackPlugin). Inter
+   is a screen-optimized UI font famous for legibility. Latin + extended-Latin
+   coverage only; Korean/CJK glyphs fall back to the system Korean font
+   (Apple SD Gothic Neo on macOS, Malgun Gothic on Windows) declared in the
+   body font-family stack, so mixed KR/EN text stays sharp. font-display:
+   swap renders text immediately in the fallback and swaps once Inter loads. */
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("./fonts/inter-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("./fonts/inter-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("./fonts/inter-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("./fonts/inter-latin-700-normal.woff2") format("woff2");
+}
+
 /* CSS Variables for themes */
 :root {
     /* Light theme (default) */
@@ -99,7 +134,7 @@ body {
     padding: 0;
     background-color: var(--background-primary);
     color: var(--text-primary);
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', 'Roboto', system-ui, sans-serif;
 }
 
 /* ADDED: Specific rule for body to be the main flex container */
