@@ -140,6 +140,9 @@ Content:
 The response must be valid JSON and follow the required schema exactly.
 Return only JSON with no extra commentary.
 
+Current date context (the reader's local time — use this to resolve relative dates like "tomorrow", "next Friday", or "in 2 weeks" into absolute local times):
+{currentDate}
+
 Event title language instructions:
 {languageInstructions}
 
@@ -177,13 +180,16 @@ Required JSON format:
 Important notes:
 1. Convert dates and times to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
 2. Email addresses must be valid
-3. Use "Asia/Seoul" as the default timezone
+3. Set the JSON "timeZone" to the local timezone shown in the current date context above (fall back to "Asia/Seoul" only if it is unknown)
 4. Set isOnlineMeeting to true if Teams or video conference details are present
 5. Mark unknown values as null
 
 Email content:
 {content}`,
   calendarCheck: `Check whether the following email content is a calendar event, meeting invite, appointment, or schedule-related notice.
+
+Current date context (reader's local time):
+{currentDate}
 
 Return "true" only if the content clearly includes one or more of these:
 - Date and time information

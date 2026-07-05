@@ -4,6 +4,7 @@
 // event details via Z.AI, and open a prefilled Outlook appointment form.
 
 import { generateContent, requireTemplate } from "../generation.js";
+import { getCurrentDateContext } from "../date-context.js";
 import { getEmailContent } from "../mailbox.js";
 import { getLanguageText } from "../language.js";
 import { fillTemplate } from "../prompts.js";
@@ -51,6 +52,7 @@ async function parseEventDetailsWithZai(emailContent) {
     const langInstructions = buildTitleLanguageInstructions(getEventTitleLanguage());
 
     const prompt = fillTemplate(requireTemplate("calendarParse", "Calendar parse"), {
+      currentDate: getCurrentDateContext(),
       languageInstructions: langInstructions,
       content: emailContent,
     });
@@ -148,6 +150,7 @@ export async function checkIfCalendarEvent(emailContent, signal = null) {
     }
 
     const prompt = fillTemplate(requireTemplate("calendarCheck", "Calendar check"), {
+      currentDate: getCurrentDateContext(),
       content: emailContent,
     });
 
