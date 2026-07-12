@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
-    "dompurify": "^3.4.11",
+    "dompurify": "^3.4.12",
     "marked": "^18.0.5"
   },
   "devDependencies": {
