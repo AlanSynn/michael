@@ -41,7 +41,7 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "dompurify": "^3.4.11",
-    "marked": "^18.0.5"
+    "marked": "^18.0.6"
   },
   "devDependencies": {
     "@babel/core": "^8.0.1",
