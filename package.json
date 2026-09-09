@@ -46,7 +46,7 @@
   "devDependencies": {
     "@babel/core": "^8.0.1",
     "@babel/preset-env": "^8.0.2",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.63.0",
     "@types/office-js": "^1.0.607",
     "@types/office-runtime": "^1.0.40",
     "acorn": "^8.11.3",
