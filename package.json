@@ -47,7 +47,7 @@
     "@babel/core": "^8.0.1",
     "@babel/preset-env": "^8.0.2",
     "@playwright/test": "^1.61.1",
-    "@types/office-js": "^1.0.600",
+    "@types/office-js": "^1.0.607",
     "@types/office-runtime": "^1.0.40",
     "acorn": "^8.11.3",
     "babel-loader": "^10.1.1",
